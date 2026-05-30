@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Scout — Hiring</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#111110;--bg2:#1a1918;--bg3:#222120;--bg4:#2a2927;
+  --border:rgba(240,234,214,0.07);--border2:rgba(240,234,214,0.13);--border3:rgba(240,234,214,0.20);
+  --text:#F0EAD6;--text2:#a09880;--text3:#5a5548;
+  --red:#E03F2A;--rdim:rgba(224,63,42,0.1);--rdim2:rgba(224,63,42,0.2);
+  --green:#4caf7d;--gdim:rgba(76,175,125,0.1);--gdim2:rgba(76,175,125,0.25);
+  --blue:#4a9eda;--bdim:rgba(74,158,218,0.12);
+  --amber:#e8a838;--adim:rgba(232,168,56,0.12);
+  --purple:#a855f7;--pdim:rgba(168,85,247,0.12);
+  --orange:#f97316;--odim:rgba(249,115,22,0.12);
+  --r:12px;--rs:8px;
+  --sidebar:220px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── AUTH ───────────────────────────────────────────────────────────────────── */
+#auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.acard{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:48px 40px;width:100%;max-width:400px;}
+.lw{background:var(--red);border-radius:10px;padding:10px 14px;display:inline-block;line-height:0;margin-bottom:10px;}
+.lw img{height:34px;width:auto;display:block;}
+.lsub{font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-weight:600;display:block;margin-bottom:24px;}
+.ttl{font-size:22px;font-weight:600;margin-bottom:5px;}
+.asub{font-size:14px;color:var(--text2);margin-bottom:28px;}
+.lbl{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500;}
+.inp{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:11px 14px;font-size:14px;color:var(--text);outline:none;font-family:inherit;margin-bottom:14px;transition:border-color 0.15s;}
+.inp:focus{border-color:var(--blue);}
+.inp::placeholder{color:var(--text3);}
+textarea.inp{resize:vertical;min-height:80px;line-height:1.5;}
+select.inp option{background:var(--bg3);}
+.bred{width:100%;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:6px;transition:opacity 0.15s;}
+.bred:hover{opacity:0.88;}
+.bred:disabled{opacity:0.45;cursor:not-allowed;}
+.ebox{background:var(--rdim);border:1px solid var(--rdim2);border-radius:var(--rs);padding:10px 14px;font-size:13px;color:#f07060;margin-bottom:14px;display:none;}
+
+/* ── APP SHELL ──────────────────────────────────────────────────────────────── */
+#app{display:none;min-height:100vh;flex-direction:row;}
+aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:40;}
+.stop{padding:20px 16px 14px;border-bottom:1px solid var(--border);}
+.stop-logo{background:var(--red);border-radius:8px;padding:6px 10px;display:inline-block;line-height:0;margin-bottom:8px;}
+.stop-logo img{height:18px;width:auto;display:block;}
+.stop-title{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-0.3px;}
+.stop-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.sidenav{flex:1;overflow-y:auto;padding:10px 8px;}
+.sb-section{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;padding:12px 8px 6px;}
+.nb{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;border-radius:var(--rs);transition:all 0.12s;text-align:left;margin-bottom:1px;}
+.nb:hover{background:var(--bg3);color:var(--text);}
+.nb.active{background:var(--bg3);color:var(--text);}
+.ni{width:15px;height:15px;flex-shrink:0;opacity:0.7;}
+.nb.active .ni{opacity:1;}
+.nb-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 6px;min-width:18px;text-align:center;}
+.side-foot{padding:12px;border-top:1px solid var(--border);}
+.side-foot-user{margin-bottom:8px;}
+.side-foot-user strong{display:block;font-size:13px;color:var(--text);font-weight:600;}
+.side-foot-user span{font-size:11px;color:var(--text3);}
+
+/* ── MAIN CONTENT ───────────────────────────────────────────────────────────── */
+.main{margin-left:var(--sidebar);flex:1;min-height:100vh;}
+.page{display:none;padding:28px;}
+.page.show{display:block;}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;}
+.ph-left h1{font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.4px;}
+.ph-left p{font-size:13px;color:var(--text3);margin-top:3px;}
+.ph-actions{display:flex;gap:8px;align-items:center;}
+
+/* ── BUTTONS ────────────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:inherit;transition:opacity 0.15s;white-space:nowrap;}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.bp{background:var(--blue);color:#fff;}
+.bp:hover:not(:disabled){opacity:0.88;}
+.bg2x{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.bg2x:hover:not(:disabled){border-color:var(--border2);color:var(--text);}
+.bd{background:var(--rdim);border:1px solid var(--rdim2);color:var(--red);}
+.bgreen{background:var(--gdim);border:1px solid var(--gdim2);color:var(--green);}
+.bamber{background:var(--adim);border:1px solid rgba(232,168,56,0.25);color:var(--amber);}
+.bsm{padding:5px 10px;font-size:12px;}
+.bxs{padding:4px 8px;font-size:11px;}
+
+/* ── STAT CARDS ─────────────────────────────────────────────────────────────── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.sc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
+.sc-num{font-size:28px;font-weight:700;color:#fff;letter-spacing:-1px;line-height:1;}
+.sc-lbl{font-size:12px;color:var(--text3);margin-top:4px;}
+.sc-sub{font-size:11px;color:var(--text2);margin-top:2px;}
+
+/* ── PIPELINE KANBAN ────────────────────────────────────────────────────────── */
+.pipeline-wrap{overflow-x:auto;padding-bottom:16px;}
+.pipeline-board{display:flex;gap:12px;min-width:max-content;align-items:flex-start;}
+.pipe-col{width:220px;flex-shrink:0;}
+.pipe-col-hd{display:flex;align-items:center;justify-content:space-between;padding:0 2px;margin-bottom:8px;}
+.pipe-col-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;}
+.pipe-count{font-size:11px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:1px 7px;}
+.pipe-cards{display:flex;flex-direction:column;gap:7px;min-height:60px;}
+.ccard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 13px;cursor:pointer;transition:border-color 0.15s,background 0.15s;}
+.ccard:hover{border-color:var(--border2);background:var(--bg3);}
+.ccard-name{font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;}
+.ccard-role{font-size:11px;color:var(--text2);margin-bottom:8px;}
+.ccard-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.source-chip{font-size:10px;border-radius:20px;padding:2px 7px;border:1px solid var(--border);color:var(--text3);}
+.days-chip{font-size:10px;color:var(--text3);}
+
+/* ── STAGE COLORS ───────────────────────────────────────────────────────────── */
+.stage-shortlisted{border-left:3px solid var(--text3);}
+.stage-screening{border-left:3px solid var(--blue);}
+.stage-interview1{border-left:3px solid var(--purple);}
+.stage-assignment{border-left:3px solid var(--amber);}
+.stage-interview2{border-left:3px solid var(--orange);}
+.stage-offer{border-left:3px solid var(--green);}
+.stage-offer_sent{border-left:3px solid var(--green);}
+.stage-confirmed{border-left:3px solid var(--green);}
+.stage-hired{border-left:3px solid var(--green);}
+.stage-rejected{border-left:3px solid var(--red);opacity:0.6;}
+
+/* ── ROLES LIST ─────────────────────────────────────────────────────────────── */
+.role-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.role-card-left h3{font-size:14px;font-weight:600;color:#fff;margin-bottom:3px;}
+.role-card-left p{font-size:12px;color:var(--text3);}
+.role-card-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.pill{font-size:11px;border-radius:20px;padding:3px 10px;font-weight:500;}
+.p-open{background:var(--gdim);color:var(--green);border:1px solid var(--gdim2);}
+.p-closed{background:var(--bg3);color:var(--text3);border:1px solid var(--border);}
+.p-on_hold{background:var(--adim);color:var(--amber);border:1px solid rgba(232,168,56,0.25);}
+.dept-chip{font-size:11px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--text3);}
+
+/* ── CANDIDATES TABLE ───────────────────────────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.5px;text-transform:uppercase;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);}
+.tbl td{padding:11px 12px;font-size:13px;color:var(--text2);border-bottom:1px solid var(--border);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--bg3);}
+.tbl .tdn{color:var(--text);font-weight:500;}
+.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.stage-badge{font-size:11px;border-radius:20px;padding:3px 9px;font-weight:500;white-space:nowrap;}
+.sb-shortlisted{background:var(--bg3);color:var(--text2);border:1px solid var(--border);}
+.sb-screening{background:var(--bdim);color:var(--blue);border:1px solid rgba(74,158,218,0.25);}
+.sb-interview1{background:var(--pdim);color:var(--purple);border:1px solid rgba(168,85,247,0.25);}
+.sb-assignment{background:var(--adim);color:var(--amber);border:1px solid rgba(232,168,56,0.25);}
+.sb-interview2{background:var(--odim);color:var(--orange);border:1px solid rgba(249,115,22,0.25);}
+.sb-offer{background:var(--gdim);color:var(--green);border:1px solid var(--gdim2);}
+.sb-offer_sent{background:var(--gdim);color:var(--green);border:1px solid var(--gdim2);}
+.sb-confirmed{background:var(--gdim2);color:var(--green);border:1px solid var(--gdim2);}
+.sb-hired{background:var(--gdim2);color:var(--green);border:1px solid var(--gdim2);}
+.sb-rejected{background:var(--rdim);color:var(--red);border:1px solid var(--rdim2);}
+
+/* ── TEMPLATES / ASSIGNMENTS ────────────────────────────────────────────────── */
+.tpl-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;}
+.tpl-card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.tpl-card-title{font-size:14px;font-weight:600;color:#fff;}
+.tpl-card-stage{font-size:11px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:2px 8px;}
+.tpl-card-body{font-size:13px;color:var(--text2);line-height:1.5;}
+
+/* ── CANDIDATE DETAIL DRAWER ────────────────────────────────────────────────── */
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:100;align-items:flex-start;justify-content:flex-end;}
+.mbg.open{display:flex;}
+.drawer{background:var(--bg2);border-left:1px solid var(--border);width:100%;max-width:580px;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
+.dhead{padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:sticky;top:0;background:var(--bg2);z-index:5;}
+.dhead h2{font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.3px;}
+.dhead-sub{font-size:13px;color:var(--text2);margin-top:2px;}
+.dclose{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;padding:4px;transition:color 0.15s;flex-shrink:0;}
+.dclose:hover{color:var(--text);}
+.dbody{padding:20px 22px;flex:1;}
+.dsec{margin-bottom:22px;}
+.dsec-hd{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.ditem label{display:block;font-size:11px;color:var(--text3);margin-bottom:3px;}
+.ditem span{font-size:13px;color:var(--text2);}
+.ditem .val{color:var(--text);}
+.dactions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.stage-flow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.stage-btn{font-size:11px;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-family:inherit;transition:all 0.12s;}
+.stage-btn:hover{border-color:var(--border2);color:var(--text);}
+.stage-btn.current{background:var(--blue);border-color:var(--blue);color:#fff;}
+.notes-area{background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px;font-size:13px;color:var(--text);width:100%;min-height:80px;resize:vertical;font-family:inherit;outline:none;transition:border-color 0.15s;line-height:1.5;}
+.notes-area:focus{border-color:var(--blue);}
+.activity-item{display:flex;gap:10px;margin-bottom:10px;}
+.act-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);flex-shrink:0;margin-top:5px;}
+.act-text{font-size:13px;color:var(--text2);line-height:1.4;}
+.act-time{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* ── MODAL ──────────────────────────────────────────────────────────────────── */
+.mbg-c{align-items:center;justify-content:center;padding:24px;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:28px;width:100%;max-width:480px;}
+.modal h2{font-size:18px;font-weight:700;color:#fff;margin-bottom:6px;}
+.msub{font-size:13px;color:var(--text2);margin-bottom:22px;line-height:1.5;}
+.mf{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+.frow{margin-bottom:12px;}
+.frow:last-child{margin-bottom:0;}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fsec{background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:16px;margin-bottom:12px;}
+.fsec h4{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:10px;}
+
+/* ── CONVERT MODAL ──────────────────────────────────────────────────────────── */
+.convert-modal{max-width:560px;}
+
+/* ── OFFER LETTER PREVIEW ───────────────────────────────────────────────────── */
+.offer-preview{background:#fff;color:#111;border-radius:var(--rs);padding:40px;font-family:Georgia,serif;font-size:13px;line-height:1.8;max-height:400px;overflow-y:auto;}
+.offer-preview h2{font-size:16px;font-weight:700;margin-bottom:20px;}
+.offer-preview p{margin-bottom:12px;}
+.offer-preview .sig-block{margin-top:40px;}
+
+/* ── FILTERS ROW ────────────────────────────────────────────────────────────── */
+.filters-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+.fsel{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer;outline:none;font-family:inherit;}
+.search-inp{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;color:var(--text);outline:none;font-family:inherit;width:200px;}
+.search-inp::placeholder{color:var(--text3);}
+.search-inp:focus{border-color:var(--border2);}
+
+/* ── MISC ───────────────────────────────────────────────────────────────────── */
+.empty{padding:48px 24px;text-align:center;color:var(--text3);font-size:14px;}
+.spin{width:14px;height:14px;border:2px solid rgba(240,234,214,0.2);border-top-color:#fff;border-radius:50%;animation:sp 0.5s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px;}
+@keyframes sp{to{transform:rotate(360deg);}}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);padding:12px 18px;font-size:13px;color:var(--text);z-index:999;opacity:0;pointer-events:none;transition:opacity 0.2s;max-width:300px;}
+#toast.show{opacity:1;}
+#toast.ok{border-color:rgba(74,158,218,0.4);color:var(--blue);}
+#toast.fail{border-color:var(--rdim2);color:#f07060;}
+.divider{height:1px;background:var(--border);margin:16px 0;}
+.link-ext{color:var(--blue);font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+.link-ext:hover{text-decoration:underline;}
+
+/* ── MOBILE ─────────────────────────────────────────────────────────────────── */
+@media(max-width:768px){
+  aside{transform:translateX(-100%);transition:transform 0.25s;}
+  aside.open{transform:translateX(0);}
+  .main{margin-left:0;}
+  .page{padding:16px 16px 80px;}
+  .mob-topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:30;}
+  .mob-topbar-left{display:flex;align-items:center;gap:10px;}
+  .mob-title{font-size:14px;font-weight:600;}
+  .hbtn{background:transparent;border:1px solid var(--border);border-radius:var(--rs);padding:6px 10px;font-size:18px;color:var(--text2);cursor:pointer;line-height:1;}
+  .mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:39;}
+  .mob-overlay.open{display:block;}
+  .pipeline-board{min-width:unset;flex-direction:column;gap:10px;}
+  .pipe-col{width:100%;}
+  .drawer{max-width:100%;border-left:none;}
+  .mbg{align-items:flex-end;}
+  .modal{border-radius:16px 16px 0 0;max-width:100%;}
+  .mbg-c{align-items:flex-end;padding:0;}
+  .dgrid,.fgrid{grid-template-columns:1fr;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .tbl-wrap{overflow-x:auto;}
+}
+@media(min-width:769px){
+  .mob-topbar,.mob-overlay{display:none!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth">
+  <div class="acard">
+    <div class="lw"><img src="https://ferlauhakdbfpwfapxxw.supabase.co/storage/v1/object/public/assets/branding/logo.png" alt="" onerror="this.parentElement.style.display='none'"/></div>
+    <span class="lsub">Scout &mdash; Hiring</span>
+    <h1 class="ttl">Welcome back</h1>
+    <p class="asub">Sign in to manage hiring.</p>
+    <div class="ebox" id="ebox"></div>
+    <label class="lbl">Email</label><input type="email" class="inp" id="fe" placeholder="you@buttertoast.co"/>
+    <label class="lbl">Password</label><input type="password" class="inp" id="fp" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"/>
+    <button class="bred" id="bsi">Sign in</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- Mobile topbar -->
+  <div class="mob-topbar">
+    <div class="mob-topbar-left">
+      <div class="lw" style="padding:4px 7px;border-radius:6px;"><img src="https://ferlauhakdbfpwfapxxw.supabase.co/storage/v1/object/public/assets/branding/logo.png" style="height:16px;" alt=""/></div>
+      <span class="mob-title">Scout</span>
+    </div>
+    <button class="hbtn" id="mob-menu-btn">&#9776;</button>
+  </div>
+  <div class="mob-overlay" id="mob-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="stop">
+      <div class="stop-logo"><img src="https://ferlauhakdbfpwfapxxw.supabase.co/storage/v1/object/public/assets/branding/logo.png" alt="" onerror="this.parentElement.style.display='none'"/></div>
+      <div class="stop-title">Scout</div>
+      <div class="stop-sub">Hiring Pipeline</div>
+    </div>
+    <nav class="sidenav">
+      <div class="sb-section">Hiring</div>
+      <button class="nb active" data-page="dashboard">
+        <svg class="ni" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+        Dashboard
+      </button>
+      <button class="nb" data-page="pipeline">
+        <svg class="ni" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Pipeline
+        <span class="nb-badge" id="nb-pipeline">0</span>
+      </button>
+      <button class="nb" data-page="candidates">
+        <svg class="ni" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 13c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Candidates
+      </button>
+      <button class="nb" data-page="roles">
+        <svg class="ni" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1" stroke="currentColor" stroke-width="1.5"/></svg>
+        Roles
+      </button>
+      <div class="sb-section">Content</div>
+      <button class="nb" data-page="assignments">
+        <svg class="ni" viewBox="0 0 16 16" fill="none"><rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M6 6h4M6 9h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Assignments
+      </button>
+      <button class="nb" data-page="templates">
+        <svg class="ni" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Templates
+      </button>
+      <div class="sb-section">Quick links</div>
+      <button class="nb" onclick="window.open('https://kitchentools.buttertoast.co')">
+        <svg class="ni" viewBox="0 0 16 16" fill="none"><path d="M8 2L2 7h2v7h4v-4h4v4h4V7h2L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        Hub
+      </button>
+      <button class="nb" onclick="window.open('https://roster.buttertoast.co')">
+        <svg class="ni" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 13c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Roster
+      </button>
+    </nav>
+    <div class="side-foot">
+      <div class="side-foot-user">
+        <strong id="sf-name">...</strong>
+        <span id="sf-role">admin</span>
+      </div>
+      <button class="btn bg2x bsm" id="bso" style="width:100%">Sign out</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <!-- DASHBOARD -->
+    <div class="page show" id="page-dashboard">
+      <div class="ph">
+        <div class="ph-left"><h1>Dashboard</h1><p id="dash-sub">Hiring overview</p></div>
+        <div class="ph-actions">
+          <button class="btn bp" onclick="openAddCandidate()">+ Add candidate</button>
+        </div>
+      </div>
+      <div class="stats-grid" id="dash-stats"></div>
+      <div id="dash-body"></div>
+    </div>
+
+    <!-- PIPELINE -->
+    <div class="page" id="page-pipeline">
+      <div class="ph">
+        <div class="ph-left"><h1>Pipeline</h1><p>All active candidates by stage</p></div>
+        <div class="ph-actions">
+          <select class="fsel" id="pipe-role-filter" onchange="renderPipeline()"><option value="">All roles</option></select>
+          <button class="btn bp" onclick="openAddCandidate()">+ Add candidate</button>
+        </div>
+      </div>
+      <div class="pipeline-wrap"><div class="pipeline-board" id="pipeline-board"></div></div>
+    </div>
+
+    <!-- CANDIDATES -->
+    <div class="page" id="page-candidates">
+      <div class="ph">
+        <div class="ph-left"><h1>Candidates</h1><p>All candidates across all roles</p></div>
+        <div class="ph-actions">
+          <button class="btn bp" onclick="openAddCandidate()">+ Add candidate</button>
+        </div>
+      </div>
+      <div class="filters-row">
+        <input class="search-inp" id="cand-search" placeholder="Search name or email..." oninput="renderCandidates()"/>
+        <select class="fsel" id="cand-stage-filter" onchange="renderCandidates()">
+          <option value="">All stages</option>
+          <option value="shortlisted">Shortlisted</option>
+          <option value="screening">Screening</option>
+          <option value="interview1">Interview 1</option>
+          <option value="assignment">Assignment</option>
+          <option value="interview2">Interview 2</option>
+          <option value="offer">Offer</option>
+          <option value="offer_sent">Offer Sent</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="hired">Hired</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <select class="fsel" id="cand-role-filter" onchange="renderCandidates()"><option value="">All roles</option></select>
+      </div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Stage</th><th>Source</th><th>Added</th><th></th></tr></thead><tbody id="cand-tbody"></tbody></table></div>
+    </div>
+
+    <!-- ROLES -->
+    <div class="page" id="page-roles">
+      <div class="ph">
+        <div class="ph-left"><h1>Roles</h1><p>Open positions and hiring status</p></div>
+        <div class="ph-actions">
+          <button class="btn bp" onclick="openRoleModal()">+ Add role</button>
+        </div>
+      </div>
+      <div id="roles-body"></div>
+    </div>
+
+    <!-- ASSIGNMENTS -->
+    <div class="page" id="page-assignments">
+      <div class="ph">
+        <div class="ph-left"><h1>Assignments</h1><p>Role-specific tasks to send candidates</p></div>
+        <div class="ph-actions">
+          <button class="btn bp" onclick="openAssignmentModal()">+ Add assignment</button>
+        </div>
+      </div>
+      <div id="assignments-body"></div>
+    </div>
+
+    <!-- TEMPLATES -->
+    <div class="page" id="page-templates">
+      <div class="ph">
+        <div class="ph-left"><h1>Templates</h1><p>Standard communication by stage</p></div>
+        <div class="ph-actions">
+          <button class="btn bp" onclick="openTemplateModal()">+ Add template</button>
+        </div>
+      </div>
+      <div id="templates-body"></div>
+    </div>
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- CANDIDATE DETAIL DRAWER -->
+<div class="mbg" id="m-candidate">
+  <div class="drawer" id="candidate-drawer">
+    <div class="dhead">
+      <div>
+        <h2 id="d-name">Candidate</h2>
+        <div class="dhead-sub" id="d-role-sub"></div>
+      </div>
+      <button class="dclose" onclick="closeM('m-candidate')">&times;</button>
+    </div>
+    <div class="dbody" id="candidate-body"></div>
+  </div>
+</div>
+
+<!-- ADD/EDIT CANDIDATE MODAL -->
+<div class="mbg mbg-c" id="m-add-candidate">
+  <div class="modal">
+    <h2 id="m-ac-title">Add candidate</h2>
+    <p class="msub">Fill in the candidate's details.</p>
+    <input type="hidden" id="ac-id"/>
+    <div class="frow"><label class="lbl">Full name *</label><input class="inp" id="ac-name" placeholder="e.g. Priya Sharma"/></div>
+    <div class="fgrid">
+      <div class="frow"><label class="lbl">Email</label><input class="inp" id="ac-email" placeholder="priya@email.com" type="email"/></div>
+      <div class="frow"><label class="lbl">Phone</label><input class="inp" id="ac-phone" placeholder="+91 98765 43210"/></div>
+    </div>
+    <div class="fgrid">
+      <div class="frow"><label class="lbl">Role *</label><select class="inp" id="ac-role"><option value="">-- Select role --</option></select></div>
+      <div class="frow"><label class="lbl">Source</label>
+        <select class="inp" id="ac-source">
+          <option value="linkedin">LinkedIn</option>
+          <option value="referral">Referral</option>
+          <option value="portal">Portal</option>
+          <option value="direct">Direct</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow"><label class="lbl">LinkedIn URL</label><input class="inp" id="ac-linkedin" placeholder="https://linkedin.com/in/..."/></div>
+    <div class="frow"><label class="lbl">Notes</label><textarea class="inp" id="ac-notes" placeholder="Initial impression, referral details..."></textarea></div>
+    <div class="mf">
+      <button class="btn bg2x" onclick="closeM('m-add-candidate')">Cancel</button>
+      <button class="btn bp" id="btn-save-candidate" onclick="saveCandidate()">Save candidate</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT ROLE MODAL -->
+<div class="mbg mbg-c" id="m-role">
+  <div class="modal">
+    <h2 id="m-role-title">Add role</h2>
+    <p class="msub">Define the position you are hiring for.</p>
+    <input type="hidden" id="r-id"/>
+    <div class="frow"><label class="lbl">Job title *</label><input class="inp" id="r-title" placeholder="e.g. Senior Graphic Designer"/></div>
+    <div class="fgrid">
+      <div class="frow"><label class="lbl">Department</label>
+        <select class="inp" id="r-dept">
+          <option value="">-- Select --</option>
+          <option value="design">Design</option>
+          <option value="video">Video</option>
+          <option value="content">Content</option>
+          <option value="strategy">Strategy</option>
+          <option value="account_management">Account Management</option>
+          <option value="business_development">Business Development</option>
+          <option value="technology">Technology</option>
+          <option value="finance">Finance</option>
+          <option value="hr">HR</option>
+          <option value="operations">Operations</option>
+          <option value="social_media">Social Media</option>
+        </select>
+      </div>
+      <div class="frow"><label class="lbl">Employment type</label>
+        <select class="inp" id="r-type">
+          <option value="permanent">Permanent</option>
+          <option value="freelancer">Freelancer</option>
+          <option value="intern">Intern</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow"><label class="lbl">Description</label><textarea class="inp" id="r-desc" placeholder="What does this role do?"></textarea></div>
+    <div class="frow"><label class="lbl">Requirements</label><textarea class="inp" id="r-req" placeholder="Skills, experience, tools..."></textarea></div>
+    <div class="frow"><label class="lbl">Status</label>
+      <select class="inp" id="r-status">
+        <option value="open">Open</option>
+        <option value="on_hold">On hold</option>
+        <option value="closed">Closed</option>
+      </select>
+    </div>
+    <div class="mf">
+      <button class="btn bg2x" onclick="closeM('m-role')">Cancel</button>
+      <button class="btn bp" id="btn-save-role" onclick="saveRole()">Save role</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT ASSIGNMENT MODAL -->
+<div class="mbg mbg-c" id="m-assignment">
+  <div class="modal">
+    <h2 id="m-asgn-title">Add assignment</h2>
+    <p class="msub">Create a task to send to candidates.</p>
+    <input type="hidden" id="asgn-id"/>
+    <div class="frow"><label class="lbl">Title *</label><input class="inp" id="asgn-title" placeholder="e.g. Design a social media post"/></div>
+    <div class="frow"><label class="lbl">Role (leave blank for generic)</label><select class="inp" id="asgn-role"><option value="">-- Generic / all roles --</option></select></div>
+    <div class="frow"><label class="lbl">Description</label><textarea class="inp" id="asgn-desc" placeholder="Brief description of the assignment..."></textarea></div>
+    <div class="frow"><label class="lbl">Instructions (sent to candidate)</label><textarea class="inp" id="asgn-instructions" placeholder="Step-by-step instructions..."></textarea></div>
+    <div class="frow"><label class="lbl">Duration (days)</label><input class="inp" id="asgn-days" type="number" placeholder="e.g. 3"/></div>
+    <div class="mf">
+      <button class="btn bg2x" onclick="closeM('m-assignment')">Cancel</button>
+      <button class="btn bp" id="btn-save-asgn" onclick="saveAssignment()">Save assignment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT TEMPLATE MODAL -->
+<div class="mbg mbg-c" id="m-template">
+  <div class="modal">
+    <h2 id="m-tpl-title">Add template</h2>
+    <p class="msub">Standard communication for a hiring stage.</p>
+    <input type="hidden" id="tpl-id"/>
+    <div class="frow"><label class="lbl">Label *</label><input class="inp" id="tpl-label" placeholder="e.g. Shortlist acknowledgement"/></div>
+    <div class="frow"><label class="lbl">Stage</label>
+      <select class="inp" id="tpl-stage">
+        <option value="shortlisted">Shortlisted</option>
+        <option value="screening">Screening</option>
+        <option value="interview1">Interview 1</option>
+        <option value="assignment">Assignment</option>
+        <option value="interview2">Interview 2</option>
+        <option value="offer">Offer</option>
+        <option value="offer_sent">Offer Sent</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </div>
+    <div class="frow"><label class="lbl">Subject</label><input class="inp" id="tpl-subject" placeholder="Email subject line..."/></div>
+    <div class="frow"><label class="lbl">Body</label><textarea class="inp" id="tpl-body" style="min-height:120px" placeholder="Use {{name}}, {{role}}, {{date}} as placeholders..."></textarea></div>
+    <div class="mf">
+      <button class="btn bg2x" onclick="closeM('m-template')">Cancel</button>
+      <button class="btn bp" id="btn-save-tpl" onclick="saveTemplate()">Save template</button>
+    </div>
+  </div>
+</div>
+
+<!-- OFFER LETTER MODAL -->
+<div class="mbg mbg-c" id="m-offer">
+  <div class="modal" style="max-width:560px;">
+    <h2>Generate offer letter</h2>
+    <p class="msub">Fill in the details to generate the offer letter PDF.</p>
+    <input type="hidden" id="offer-cand-id"/>
+    <div class="fsec">
+      <h4>Compensation</h4>
+      <div class="frow"><label class="lbl">CTC / Stipend</label><input class="inp" id="offer-ctc" placeholder="e.g. ₹4,80,000 per annum or ₹15,000/month stipend"/></div>
+    </div>
+    <div class="fsec">
+      <h4>Terms</h4>
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Joining date</label><input class="inp" id="offer-joining" type="date"/></div>
+        <div class="frow"><label class="lbl">Probation (months)</label><input class="inp" id="offer-probation" type="number" value="3"/></div>
+      </div>
+      <div class="frow"><label class="lbl">Notice period (days)</label><input class="inp" id="offer-notice" type="number" value="30"/></div>
+    </div>
+    <div class="fsec">
+      <h4>Signatory</h4>
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Name</label><input class="inp" id="offer-sig-name" value="Aakash Rathi"/></div>
+        <div class="frow"><label class="lbl">Designation</label><input class="inp" id="offer-sig-desig" value="Founder"/></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg2x" onclick="closeM('m-offer')">Cancel</button>
+      <button class="btn bp" id="btn-gen-offer" onclick="generateOfferLetter()"><span class="spin" id="offer-spin" style="display:none"></span>Generate &amp; save to Drive</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONVERT TO EMPLOYEE MODAL -->
+<div class="mbg mbg-c" id="m-convert">
+  <div class="modal convert-modal">
+    <h2>Convert to employee</h2>
+    <p class="msub">Capture personal details before creating the employee record in Roster.</p>
+    <input type="hidden" id="conv-cand-id"/>
+    <div class="fsec">
+      <h4>Identity</h4>
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Aadhaar number</label><input class="inp" id="conv-aadhaar" placeholder="XXXX XXXX XXXX"/></div>
+        <div class="frow"><label class="lbl">PAN number</label><input class="inp" id="conv-pan" placeholder="ABCDE1234F"/></div>
+      </div>
+    </div>
+    <div class="fsec">
+      <h4>Bank details</h4>
+      <div class="frow"><label class="lbl">Bank name</label><input class="inp" id="conv-bank" placeholder="e.g. HDFC Bank"/></div>
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Account number</label><input class="inp" id="conv-acc" placeholder="XXXXXXXXXX"/></div>
+        <div class="frow"><label class="lbl">IFSC code</label><input class="inp" id="conv-ifsc" placeholder="HDFC0001234"/></div>
+      </div>
+    </div>
+    <div class="fsec">
+      <h4>Employment</h4>
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Employee ID</label><input class="inp" id="conv-emp-id" placeholder="e.g. 0011"/></div>
+        <div class="frow"><label class="lbl">Joining date</label><input class="inp" id="conv-joining" type="date"/></div>
+      </div>
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Department</label>
+          <select class="inp" id="conv-dept">
+            <option value="design">Design</option><option value="video">Video</option>
+            <option value="content">Content</option><option value="strategy">Strategy</option>
+            <option value="account_management">Account Management</option>
+            <option value="business_development">Business Development</option>
+            <option value="technology">Technology</option><option value="finance">Finance</option>
+            <option value="hr">HR</option><option value="operations">Operations</option>
+            <option value="social_media">Social Media</option>
+          </select>
+        </div>
+        <div class="frow"><label class="lbl">Employment type</label>
+          <select class="inp" id="conv-type">
+            <option value="permanent">Permanent</option>
+            <option value="intern">Intern</option>
+            <option value="freelancer">Freelancer</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow"><label class="lbl">Designation</label><input class="inp" id="conv-desig" placeholder="e.g. Graphic Designer"/></div>
+    </div>
+    <div class="mf">
+      <button class="btn bg2x" onclick="closeM('m-convert')">Cancel</button>
+      <button class="btn bp" id="btn-convert" onclick="doConvert()"><span class="spin" id="conv-spin" style="display:none"></span>Create employee</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var db = supabase.createClient('https://ferlauhakdbfpwfapxxw.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlcmxhdWhha2RiZnB3ZmFweHh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDc2MjgsImV4cCI6MjA5NTEyMzYyOH0.v7YS2YyOjftzcrDrIzeBAW-H1Xk2DB4iHQO67YF7xwQ');
+
+var DRIVE_URL = 'https://script.google.com/macros/s/AKfycbyVbz5RdpIuwkkyqrvccttilVhxKB71BXWblIC7jrLa4k8G6pqJLMSVWzdE11iq17yvaA/exec';
+
+var ME = null, MY_ROLE = null;
+var ALL_CANDIDATES = [], ALL_ROLES = [], ALL_ASSIGNMENTS = [], ALL_TEMPLATES = [];
+var ACTIVE_CANDIDATE = null;
+
+var STAGES = [
+  {key:'shortlisted',label:'Shortlisted'},
+  {key:'screening',label:'Screening'},
+  {key:'interview1',label:'Interview 1'},
+  {key:'assignment',label:'Assignment'},
+  {key:'interview2',label:'Interview 2'},
+  {key:'offer',label:'Offer'},
+  {key:'offer_sent',label:'Offer Sent'},
+  {key:'confirmed',label:'Confirmed'},
+  {key:'hired',label:'Hired'},
+  {key:'rejected',label:'Rejected'}
+];
+
+var DEPT_DISPLAY = {
+  design:'Design',video:'Video',content:'Content',strategy:'Strategy',
+  account_management:'Account Management',business_development:'Business Development',
+  technology:'Technology',finance:'Finance',hr:'HR',operations:'Operations',
+  social_media:'Social Media',pr:'PR',research:'Research',legal:'Legal'
+};
+
+var SOURCE_LABELS = {linkedin:'LinkedIn',referral:'Referral',portal:'Portal',direct:'Direct',other:'Other'};
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='show '+(t||'ok');clearTimeout(el._t);el._t=setTimeout(function(){el.className='';},3000);}
+function esc(s){if(!s)return '';var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+function fmt(d){if(!d)return '';return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
+function fmtAgo(d){if(!d)return '';var diff=Date.now()-new Date(d).getTime();var days=Math.floor(diff/86400000);if(days===0)return 'Today';if(days===1)return 'Yesterday';if(days<7)return days+'d ago';if(days<30)return Math.floor(days/7)+'w ago';return Math.floor(days/30)+'mo ago';}
+function rName(id){var r=ALL_ROLES.find(function(x){return x.id===id;});return r?r.title:'--';}
+function stageBadge(s){return '<span class="stage-badge sb-'+s+'">'+stageLabel(s)+'</span>';}
+function stageLabel(s){var f=STAGES.find(function(x){return x.key===s;});return f?f.label:s;}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async function(){
+  var {data:{session}} = await db.auth.getSession();
+  if(session) await loadApp(session.user);
+  else document.getElementById('auth').style.display='flex';
+});
+
+document.getElementById('bsi').addEventListener('click', async function(){
+  var btn=this; btn.disabled=true; btn.innerHTML='<span class="spin"></span>Signing in...';
+  var {data,error} = await db.auth.signInWithPassword({email:document.getElementById('fe').value.trim(),password:document.getElementById('fp').value});
+  if(error){var eb=document.getElementById('ebox');eb.textContent=error.message;eb.style.display='block';btn.disabled=false;btn.innerHTML='Sign in';return;}
+  await loadApp(data.user);
+});
+
+document.getElementById('bso').addEventListener('click', async function(){
+  await db.auth.signOut();
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth').style.display='flex';
+});
+
+// ── LOAD APP ──────────────────────────────────────────────────────────────────
+async function loadApp(user){
+  document.getElementById('auth').style.display='none';
+  document.getElementById('app').style.display='flex';
+
+  var [pRes,urRes] = await Promise.all([
+    db.from('profiles').select('full_name').eq('id',user.id).single(),
+    db.from('user_roles').select('role_id').eq('user_id',user.id)
+  ]);
+
+  var name = (pRes.data&&pRes.data.full_name)?pRes.data.full_name:user.email.split('@')[0];
+  ME = {id:user.id, name:name, email:user.email};
+
+  if(urRes.data&&urRes.data.length){
+    var ids = urRes.data.map(function(r){return r.role_id;});
+    var rRes = await db.from('roles').select('name').in('id',ids);
+    MY_ROLE = (rRes.data&&rRes.data.length)?rRes.data[0].name:null;
+  }
+
+  // Access check: admin or account_manager only
+  if(MY_ROLE !== 'admin' && MY_ROLE !== 'account_manager'){
+    document.getElementById('app').style.display='none';
+    document.getElementById('auth').style.display='flex';
+    var eb=document.getElementById('ebox');eb.textContent='You do not have access to Scout.';eb.style.display='block';
+    await db.auth.signOut();
+    return;
+  }
+
+  document.getElementById('sf-name').textContent=name;
+  document.getElementById('sf-role').textContent=MY_ROLE?MY_ROLE.replace(/_/g,' '):'';
+
+  await loadAllData();
+  setupNav();
+  setupMobile();
+  renderDashboard();
+}
+
+async function loadAllData(){
+  var [cRes,rRes,aRes,tRes] = await Promise.all([
+    db.from('scout_candidates').select('*').order('created_at',{ascending:false}),
+    db.from('scout_roles').select('*').order('created_at',{ascending:false}),
+    db.from('scout_assignments').select('*').order('created_at',{ascending:false}),
+    db.from('scout_templates').select('*').order('created_at',{ascending:false})
+  ]);
+  ALL_CANDIDATES = cRes.data||[];
+  ALL_ROLES = rRes.data||[];
+  ALL_ASSIGNMENTS = aRes.data||[];
+  ALL_TEMPLATES = tRes.data||[];
+  populateRoleDropdowns();
+}
+
+function populateRoleDropdowns(){
+  var selects = ['ac-role','r-id','asgn-role','cand-role-filter','pipe-role-filter'];
+  selects.forEach(function(id){
+    var el=document.getElementById(id); if(!el)return;
+    var val=el.value;
+    while(el.options.length > 1) el.remove(1);
+    ALL_ROLES.forEach(function(r){
+      if(r.status==='closed')return;
+      var o=document.createElement('option');o.value=r.id;o.textContent=r.title;
+      el.appendChild(o);
+    });
+    if(val) el.value=val;
+  });
+  // cand-role-filter and pipe-role-filter allow all roles including closed
+  ['cand-role-filter','pipe-role-filter'].forEach(function(id){
+    var el=document.getElementById(id); if(!el)return;
+    while(el.options.length > 1) el.remove(1);
+    ALL_ROLES.forEach(function(r){
+      var o=document.createElement('option');o.value=r.id;o.textContent=r.title;
+      el.appendChild(o);
+    });
+  });
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function setupNav(){
+  document.querySelectorAll('.nb[data-page]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var page=this.getAttribute('data-page');
+      showPage(page);
+      // close mobile sidebar
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('mob-overlay').classList.remove('open');
+    });
+  });
+}
+
+function showPage(page){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('show');});
+  document.querySelectorAll('.nb[data-page]').forEach(function(b){b.classList.remove('active');});
+  var pg=document.getElementById('page-'+page);
+  if(pg)pg.classList.add('show');
+  var nb=document.querySelector('.nb[data-page="'+page+'"]');
+  if(nb)nb.classList.add('active');
+  if(page==='dashboard')renderDashboard();
+  else if(page==='pipeline')renderPipeline();
+  else if(page==='candidates')renderCandidates();
+  else if(page==='roles')renderRoles();
+  else if(page==='assignments')renderAssignments();
+  else if(page==='templates')renderTemplates();
+}
+
+function setupMobile(){
+  var btn=document.getElementById('mob-menu-btn');
+  var overlay=document.getElementById('mob-overlay');
+  var sidebar=document.getElementById('sidebar');
+  btn.addEventListener('click',function(){sidebar.classList.toggle('open');overlay.classList.toggle('open');});
+  overlay.addEventListener('click',function(){sidebar.classList.remove('open');overlay.classList.remove('open');});
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDashboard(){
+  var active=ALL_CANDIDATES.filter(function(c){return c.stage!=='hired'&&c.stage!=='rejected';});
+  var hired=ALL_CANDIDATES.filter(function(c){return c.stage==='hired';});
+  var offers=ALL_CANDIDATES.filter(function(c){return c.stage==='offer'||c.stage==='offer_sent'||c.stage==='confirmed';});
+  var openRoles=ALL_ROLES.filter(function(r){return r.status==='open';});
+
+  // update pipeline badge
+  document.getElementById('nb-pipeline').textContent=active.length;
+
+  document.getElementById('dash-stats').innerHTML=
+    '<div class="sc"><div class="sc-num">'+active.length+'</div><div class="sc-lbl">Active candidates</div></div>'+
+    '<div class="sc"><div class="sc-num">'+openRoles.length+'</div><div class="sc-lbl">Open roles</div></div>'+
+    '<div class="sc"><div class="sc-num">'+offers.length+'</div><div class="sc-lbl">In offer stage</div></div>'+
+    '<div class="sc"><div class="sc-num">'+hired.length+'</div><div class="sc-lbl">Hired total</div></div>';
+
+  // Recent activity (last 5 candidates)
+  var recent=ALL_CANDIDATES.slice(0,5);
+  var html='<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:10px;">Recent</div>';
+  if(!recent.length){html+='<div class="empty">No candidates yet. Add your first one.</div>';}
+  else{
+    html+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Stage</th><th>Added</th></tr></thead><tbody>';
+    recent.forEach(function(c){
+      html+='<tr style="cursor:pointer" onclick="openCandidate(\''+c.id+'\')">'+
+        '<td class="tdn">'+esc(c.full_name)+'</td>'+
+        '<td>'+esc(rName(c.role_id))+'</td>'+
+        '<td>'+stageBadge(c.stage)+'</td>'+
+        '<td>'+fmtAgo(c.created_at)+'</td>'+
+        '</tr>';
+    });
+    html+='</tbody></table></div>';
+  }
+  document.getElementById('dash-body').innerHTML=html;
+}
+
+// ── PIPELINE ──────────────────────────────────────────────────────────────────
+function renderPipeline(){
+  var roleFilter=document.getElementById('pipe-role-filter').value;
+  var active=ALL_CANDIDATES.filter(function(c){
+    if(c.stage==='hired'||c.stage==='rejected')return false;
+    if(roleFilter&&c.role_id!==roleFilter)return false;
+    return true;
+  });
+
+  var html='';
+  STAGES.filter(function(s){return s.key!=='hired'&&s.key!=='rejected';}).forEach(function(s){
+    var cards=active.filter(function(c){return c.stage===s.key;});
+    html+='<div class="pipe-col">'+
+      '<div class="pipe-col-hd"><span class="pipe-col-title">'+s.label+'</span><span class="pipe-count">'+cards.length+'</span></div>'+
+      '<div class="pipe-cards">';
+    if(!cards.length){html+='<div style="padding:12px 8px;font-size:12px;color:var(--text3);text-align:center;">Empty</div>';}
+    cards.forEach(function(c){
+      html+='<div class="ccard stage-'+s.key+'" onclick="openCandidate(\''+c.id+'\')">'+
+        '<div class="ccard-name">'+esc(c.full_name)+'</div>'+
+        '<div class="ccard-role">'+esc(rName(c.role_id))+'</div>'+
+        '<div class="ccard-meta">'+
+          '<span class="source-chip">'+esc(SOURCE_LABELS[c.source]||c.source)+'</span>'+
+          '<span class="days-chip">'+fmtAgo(c.created_at)+'</span>'+
+        '</div></div>';
+    });
+    html+='</div></div>';
+  });
+  document.getElementById('pipeline-board').innerHTML=html;
+}
+
+// ── CANDIDATES ────────────────────────────────────────────────────────────────
+function renderCandidates(){
+  var q=(document.getElementById('cand-search').value||'').toLowerCase();
+  var sf=document.getElementById('cand-stage-filter').value;
+  var rf=document.getElementById('cand-role-filter').value;
+  var filtered=ALL_CANDIDATES.filter(function(c){
+    if(q&&!(c.full_name||'').toLowerCase().includes(q)&&!(c.email||'').toLowerCase().includes(q))return false;
+    if(sf&&c.stage!==sf)return false;
+    if(rf&&c.role_id!==rf)return false;
+    return true;
+  });
+  var html='';
+  if(!filtered.length){html='<div class="empty">No candidates found.</div>';}
+  else{
+    filtered.forEach(function(c){
+      html+='<tr style="cursor:pointer" onclick="openCandidate(\''+c.id+'\')">'+
+        '<td class="tdn">'+esc(c.full_name)+'</td>'+
+        '<td>'+esc(rName(c.role_id))+'</td>'+
+        '<td>'+stageBadge(c.stage)+'</td>'+
+        '<td><span class="source-chip">'+esc(SOURCE_LABELS[c.source]||c.source)+'</span></td>'+
+        '<td>'+fmtAgo(c.created_at)+'</td>'+
+        '<td><div style="display:flex;gap:6px;">'+
+          '<button class="btn bg2x bxs" onclick="event.stopPropagation();openEditCandidate(\''+c.id+'\')">Edit</button>'+
+        '</div></td>'+
+        '</tr>';
+    });
+    document.getElementById('cand-tbody').innerHTML=html;
+    return;
+  }
+  document.getElementById('cand-tbody').innerHTML='<tr><td colspan="6">'+html+'</td></tr>';
+}
+
+// ── ROLES ─────────────────────────────────────────────────────────────────────
+function renderRoles(){
+  var html='';
+  if(!ALL_ROLES.length){html='<div class="empty">No roles yet. Add your first open position.</div>';}
+  ALL_ROLES.forEach(function(r){
+    var count=ALL_CANDIDATES.filter(function(c){return c.role_id===r.id&&c.stage!=='hired'&&c.stage!=='rejected';}).length;
+    html+='<div class="role-card">'+
+      '<div class="role-card-left">'+
+        '<h3>'+esc(r.title)+'</h3>'+
+        '<p>'+(r.department?'<span class="dept-chip">'+esc(DEPT_DISPLAY[r.department]||r.department)+'</span> ':'')+(r.employment_type?esc(r.employment_type):'')+(count?' &mdash; '+count+' active':' &mdash; no active candidates')+'</p>'+
+      '</div>'+
+      '<div class="role-card-right">'+
+        '<span class="pill p-'+r.status+'">'+r.status.replace('_',' ')+'</span>'+
+        '<button class="btn bg2x bsm" onclick="openEditRole(\''+r.id+'\')">Edit</button>'+
+        '<button class="btn bg2x bsm" onclick="openAddCandidate(\''+r.id+'\')">+ Candidate</button>'+
+      '</div>'+
+      '</div>';
+  });
+  document.getElementById('roles-body').innerHTML=html;
+}
+
+// ── ASSIGNMENTS ───────────────────────────────────────────────────────────────
+function renderAssignments(){
+  var html='';
+  if(!ALL_ASSIGNMENTS.length){html='<div class="empty">No assignments yet.</div>';}
+  ALL_ASSIGNMENTS.forEach(function(a){
+    html+='<div class="tpl-card">'+
+      '<div class="tpl-card-hd">'+
+        '<span class="tpl-card-title">'+esc(a.title)+'</span>'+
+        '<div style="display:flex;gap:6px;align-items:center;">'+
+          (a.role_id?'<span class="tpl-card-stage">'+esc(rName(a.role_id))+'</span>':'<span class="tpl-card-stage">Generic</span>')+
+          (a.duration_days?'<span class="tpl-card-stage">'+a.duration_days+'d</span>':'')+
+          '<button class="btn bg2x bxs" onclick="openEditAssignment(\''+a.id+'\')">Edit</button>'+
+        '</div>'+
+      '</div>'+
+      (a.description?'<div class="tpl-card-body">'+esc(a.description)+'</div>':'')+
+      '</div>';
+  });
+  document.getElementById('assignments-body').innerHTML=html;
+}
+
+// ── TEMPLATES ─────────────────────────────────────────────────────────────────
+function renderTemplates(){
+  var html='';
+  if(!ALL_TEMPLATES.length){html='<div class="empty">No templates yet.</div>';}
+  ALL_TEMPLATES.forEach(function(t){
+    html+='<div class="tpl-card">'+
+      '<div class="tpl-card-hd">'+
+        '<span class="tpl-card-title">'+esc(t.label)+'</span>'+
+        '<div style="display:flex;gap:6px;align-items:center;">'+
+          '<span class="tpl-card-stage">'+stageLabel(t.stage)+'</span>'+
+          '<button class="btn bg2x bxs" onclick="openEditTemplate(\''+t.id+'\')">Edit</button>'+
+        '</div>'+
+      '</div>'+
+      (t.subject?'<div style="font-size:12px;color:var(--text3);margin-top:4px;margin-bottom:4px;">Subject: '+esc(t.subject)+'</div>':'')+
+      (t.body?'<div class="tpl-card-body" style="white-space:pre-wrap;">'+esc(t.body.substring(0,200))+(t.body.length>200?'...':'')+'</div>':'')+
+      '</div>';
+  });
+  document.getElementById('templates-body').innerHTML=html;
+}
+
+// ── CANDIDATE DETAIL DRAWER ───────────────────────────────────────────────────
+function openCandidate(id){
+  ACTIVE_CANDIDATE = ALL_CANDIDATES.find(function(c){return c.id===id;});
+  if(!ACTIVE_CANDIDATE)return;
+  var c=ACTIVE_CANDIDATE;
+  document.getElementById('d-name').textContent=c.full_name;
+  document.getElementById('d-role-sub').textContent=rName(c.role_id)+' &mdash; '+stageLabel(c.stage);
+
+  var html='';
+
+  // Stage progression
+  html+='<div class="dsec"><div class="dsec-hd">Stage</div>';
+  html+='<div class="stage-flow">';
+  STAGES.forEach(function(s){
+    if(s.key==='rejected')return;
+    html+='<button class="stage-btn'+(c.stage===s.key?' current':'')+'" onclick="moveStage(\''+id+'\',\''+s.key+'\')">'+s.label+'</button>';
+  });
+  html+='</div>';
+  html+='<button class="btn bd bsm" onclick="moveStage(\''+id+'\',\'rejected\')">Mark rejected</button>';
+  html+='</div>';
+
+  // Details
+  html+='<div class="dsec"><div class="dsec-hd">Details</div>';
+  html+='<div class="dgrid">';
+  html+='<div class="ditem"><label>Email</label><span class="val">'+(c.email?'<a href="mailto:'+esc(c.email)+'" class="link-ext">'+esc(c.email)+'</a>':'--')+'</span></div>';
+  html+='<div class="ditem"><label>Phone</label><span class="val">'+(c.phone||'--')+'</span></div>';
+  html+='<div class="ditem"><label>Source</label><span class="val">'+(SOURCE_LABELS[c.source]||c.source||'--')+'</span></div>';
+  html+='<div class="ditem"><label>Added</label><span class="val">'+fmtAgo(c.created_at)+'</span></div>';
+  if(c.linkedin_url)html+='<div class="ditem" style="grid-column:1/-1"><label>LinkedIn</label><span><a href="'+esc(c.linkedin_url)+'" target="_blank" class="link-ext">View profile &#8599;</a></span></div>';
+  if(c.drive_folder_link)html+='<div class="ditem" style="grid-column:1/-1"><label>Drive folder</label><span><a href="'+esc(c.drive_folder_link)+'" target="_blank" class="link-ext">Open folder &#8599;</a></span></div>';
+  html+='</div></div>';
+
+  // Actions
+  html+='<div class="dsec"><div class="dsec-hd">Actions</div>';
+  html+='<div class="dactions">';
+  html+='<button class="btn bg2x bsm" onclick="openEditCandidate(\''+id+'\')">Edit details</button>';
+  if(c.stage==='offer'||c.stage==='offer_sent'||c.stage==='confirmed'){
+    html+='<button class="btn bgreen bsm" onclick="openOfferModal(\''+id+'\')">Generate offer letter</button>';
+  }
+  if(c.stage==='confirmed'||c.stage==='hired'){
+    html+='<button class="btn bp bsm" onclick="openConvertModal(\''+id+'\')">Convert to employee</button>';
+  }
+  html+='</div></div>';
+
+  // Notes
+  html+='<div class="dsec"><div class="dsec-hd">Notes</div>';
+  html+='<textarea class="notes-area" id="cand-notes-ta" onblur="saveNotes(\''+id+'\')">'+esc(c.notes||'')+'</textarea>';
+  html+='</div>';
+
+  document.getElementById('candidate-body').innerHTML=html;
+  openM('m-candidate');
+}
+
+async function moveStage(candidateId, stage){
+  var r=await db.from('scout_candidates').update({stage:stage}).eq('id',candidateId);
+  if(r.error){toast('Failed to update stage.','fail');return;}
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  if(c){c.stage=stage;}
+  toast('Stage updated to '+stageLabel(stage));
+  openCandidate(candidateId);
+  renderDashboard();
+  var activePage=document.querySelector('.page.show');
+  if(activePage&&activePage.id==='page-pipeline')renderPipeline();
+  if(activePage&&activePage.id==='page-candidates')renderCandidates();
+}
+
+async function saveNotes(candidateId){
+  var ta=document.getElementById('cand-notes-ta'); if(!ta)return;
+  var notes=ta.value;
+  await db.from('scout_candidates').update({notes:notes}).eq('id',candidateId);
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  if(c)c.notes=notes;
+}
+
+// ── ADD/EDIT CANDIDATE ────────────────────────────────────────────────────────
+function openAddCandidate(roleId){
+  document.getElementById('m-ac-title').textContent='Add candidate';
+  document.getElementById('ac-id').value='';
+  document.getElementById('ac-name').value='';
+  document.getElementById('ac-email').value='';
+  document.getElementById('ac-phone').value='';
+  document.getElementById('ac-role').value=roleId||'';
+  document.getElementById('ac-source').value='linkedin';
+  document.getElementById('ac-linkedin').value='';
+  document.getElementById('ac-notes').value='';
+  openM('m-add-candidate');
+}
+
+function openEditCandidate(id){
+  var c=ALL_CANDIDATES.find(function(x){return x.id===id;});
+  if(!c)return;
+  document.getElementById('m-ac-title').textContent='Edit candidate';
+  document.getElementById('ac-id').value=c.id;
+  document.getElementById('ac-name').value=c.full_name||'';
+  document.getElementById('ac-email').value=c.email||'';
+  document.getElementById('ac-phone').value=c.phone||'';
+  document.getElementById('ac-role').value=c.role_id||'';
+  document.getElementById('ac-source').value=c.source||'linkedin';
+  document.getElementById('ac-linkedin').value=c.linkedin_url||'';
+  document.getElementById('ac-notes').value=c.notes||'';
+  closeM('m-candidate');
+  openM('m-add-candidate');
+}
+
+async function saveCandidate(){
+  var btn=document.getElementById('btn-save-candidate');
+  var name=document.getElementById('ac-name').value.trim();
+  var roleId=document.getElementById('ac-role').value;
+  if(!name){toast('Name is required.','fail');return;}
+  if(!roleId){toast('Please select a role.','fail');return;}
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
+
+  var id=document.getElementById('ac-id').value;
+  var payload={
+    full_name:name, email:document.getElementById('ac-email').value.trim()||null,
+    phone:document.getElementById('ac-phone').value.trim()||null,
+    role_id:roleId, source:document.getElementById('ac-source').value,
+    linkedin_url:document.getElementById('ac-linkedin').value.trim()||null,
+    notes:document.getElementById('ac-notes').value.trim()||null
+  };
+
+  var r;
+  if(id){
+    r=await db.from('scout_candidates').update(payload).eq('id',id).select().single();
+  } else {
+    payload.stage='shortlisted'; payload.created_by=ME.id;
+    r=await db.from('scout_candidates').insert(payload).select().single();
+    // Create Drive folder
+    if(!r.error&&r.data){
+      var role=ALL_ROLES.find(function(x){return x.id===roleId;});
+      driveCall({action:'create_candidate_folder',name:name,role:role?role.title:'General'}).then(function(dr){
+        if(dr&&dr.folderId){
+          db.from('scout_candidates').update({drive_folder_id:dr.folderId,drive_folder_link:dr.folderLink}).eq('id',r.data.id);
+          var c=ALL_CANDIDATES.find(function(x){return x.id===r.data.id;});
+          if(c){c.drive_folder_id=dr.folderId;c.drive_folder_link=dr.folderLink;}
+        }
+      });
+    }
+  }
+
+  btn.disabled=false; btn.innerHTML='Save candidate';
+  if(r.error){toast('Failed to save.','fail');return;}
+  await loadAllData();
+  closeM('m-add-candidate');
+  toast(id?'Candidate updated.':'Candidate added.');
+  renderDashboard();
+}
+
+// ── ROLES CRUD ────────────────────────────────────────────────────────────────
+function openRoleModal(){
+  document.getElementById('m-role-title').textContent='Add role';
+  document.getElementById('r-id').value='';
+  document.getElementById('r-title').value='';
+  document.getElementById('r-dept').value='';
+  document.getElementById('r-type').value='permanent';
+  document.getElementById('r-desc').value='';
+  document.getElementById('r-req').value='';
+  document.getElementById('r-status').value='open';
+  openM('m-role');
+}
+
+function openEditRole(id){
+  var r=ALL_ROLES.find(function(x){return x.id===id;});
+  if(!r)return;
+  document.getElementById('m-role-title').textContent='Edit role';
+  document.getElementById('r-id').value=r.id;
+  document.getElementById('r-title').value=r.title||'';
+  document.getElementById('r-dept').value=r.department||'';
+  document.getElementById('r-type').value=r.employment_type||'permanent';
+  document.getElementById('r-desc').value=r.description||'';
+  document.getElementById('r-req').value=r.requirements||'';
+  document.getElementById('r-status').value=r.status||'open';
+  openM('m-role');
+}
+
+async function saveRole(){
+  var btn=document.getElementById('btn-save-role');
+  var title=document.getElementById('r-title').value.trim();
+  if(!title){toast('Title is required.','fail');return;}
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
+  var id=document.getElementById('r-id').value;
+  var payload={title:title,department:document.getElementById('r-dept').value||null,employment_type:document.getElementById('r-type').value,description:document.getElementById('r-desc').value.trim()||null,requirements:document.getElementById('r-req').value.trim()||null,status:document.getElementById('r-status').value};
+  var r=id?await db.from('scout_roles').update(payload).eq('id',id):await db.from('scout_roles').insert({...payload,created_by:ME.id});
+  btn.disabled=false; btn.innerHTML='Save role';
+  if(r.error){toast('Failed to save.','fail');return;}
+  await loadAllData();
+  closeM('m-role');
+  toast(id?'Role updated.':'Role added.');
+  renderRoles();
+}
+
+// ── ASSIGNMENT CRUD ───────────────────────────────────────────────────────────
+function openAssignmentModal(){
+  document.getElementById('m-asgn-title').textContent='Add assignment';
+  document.getElementById('asgn-id').value='';
+  document.getElementById('asgn-title').value='';
+  document.getElementById('asgn-role').value='';
+  document.getElementById('asgn-desc').value='';
+  document.getElementById('asgn-instructions').value='';
+  document.getElementById('asgn-days').value='';
+  openM('m-assignment');
+}
+function openEditAssignment(id){
+  var a=ALL_ASSIGNMENTS.find(function(x){return x.id===id;});
+  if(!a)return;
+  document.getElementById('m-asgn-title').textContent='Edit assignment';
+  document.getElementById('asgn-id').value=a.id;
+  document.getElementById('asgn-title').value=a.title||'';
+  document.getElementById('asgn-role').value=a.role_id||'';
+  document.getElementById('asgn-desc').value=a.description||'';
+  document.getElementById('asgn-instructions').value=a.instructions||'';
+  document.getElementById('asgn-days').value=a.duration_days||'';
+  openM('m-assignment');
+}
+async function saveAssignment(){
+  var btn=document.getElementById('btn-save-asgn');
+  var title=document.getElementById('asgn-title').value.trim();
+  if(!title){toast('Title is required.','fail');return;}
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
+  var id=document.getElementById('asgn-id').value;
+  var payload={title:title,role_id:document.getElementById('asgn-role').value||null,description:document.getElementById('asgn-desc').value.trim()||null,instructions:document.getElementById('asgn-instructions').value.trim()||null,duration_days:parseInt(document.getElementById('asgn-days').value)||null};
+  var r=id?await db.from('scout_assignments').update(payload).eq('id',id):await db.from('scout_assignments').insert(payload);
+  btn.disabled=false; btn.innerHTML='Save assignment';
+  if(r.error){toast('Failed to save.','fail');return;}
+  await loadAllData();
+  closeM('m-assignment');
+  toast(id?'Assignment updated.':'Assignment added.');
+  renderAssignments();
+}
+
+// ── TEMPLATE CRUD ─────────────────────────────────────────────────────────────
+function openTemplateModal(){
+  document.getElementById('m-tpl-title').textContent='Add template';
+  document.getElementById('tpl-id').value='';
+  document.getElementById('tpl-label').value='';
+  document.getElementById('tpl-stage').value='shortlisted';
+  document.getElementById('tpl-subject').value='';
+  document.getElementById('tpl-body').value='';
+  openM('m-template');
+}
+function openEditTemplate(id){
+  var t=ALL_TEMPLATES.find(function(x){return x.id===id;});
+  if(!t)return;
+  document.getElementById('m-tpl-title').textContent='Edit template';
+  document.getElementById('tpl-id').value=t.id;
+  document.getElementById('tpl-label').value=t.label||'';
+  document.getElementById('tpl-stage').value=t.stage||'shortlisted';
+  document.getElementById('tpl-subject').value=t.subject||'';
+  document.getElementById('tpl-body').value=t.body||'';
+  openM('m-template');
+}
+async function saveTemplate(){
+  var btn=document.getElementById('btn-save-tpl');
+  var label=document.getElementById('tpl-label').value.trim();
+  if(!label){toast('Label is required.','fail');return;}
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
+  var id=document.getElementById('tpl-id').value;
+  var payload={label:label,stage:document.getElementById('tpl-stage').value,subject:document.getElementById('tpl-subject').value.trim()||null,body:document.getElementById('tpl-body').value.trim()||null};
+  var r=id?await db.from('scout_templates').update(payload).eq('id',id):await db.from('scout_templates').insert(payload);
+  btn.disabled=false; btn.innerHTML='Save template';
+  if(r.error){toast('Failed to save.','fail');return;}
+  await loadAllData();
+  closeM('m-template');
+  toast(id?'Template updated.':'Template added.');
+  renderTemplates();
+}
+
+// ── OFFER LETTER ──────────────────────────────────────────────────────────────
+function openOfferModal(candidateId){
+  document.getElementById('offer-cand-id').value=candidateId;
+  // Pre-fill joining date with today
+  document.getElementById('offer-joining').value=new Date().toISOString().split('T')[0];
+  closeM('m-candidate');
+  openM('m-offer');
+}
+
+async function generateOfferLetter(){
+  var btn=document.getElementById('btn-gen-offer');
+  var spin=document.getElementById('offer-spin');
+  var candId=document.getElementById('offer-cand-id').value;
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candId;});
+  if(!c){toast('Candidate not found.','fail');return;}
+  var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
+
+  var ctc=document.getElementById('offer-ctc').value.trim();
+  var joining=document.getElementById('offer-joining').value;
+  var probation=document.getElementById('offer-probation').value;
+  var notice=document.getElementById('offer-notice').value;
+  var sigName=document.getElementById('offer-sig-name').value.trim();
+  var sigDesig=document.getElementById('offer-sig-desig').value.trim();
+
+  if(!ctc||!joining){toast('CTC and joining date are required.','fail');return;}
+
+  btn.disabled=true; spin.style.display='inline-block';
+
+  // Generate HTML content for the letter
+  var letterHtml = generateOfferLetterHTML({
+    candidateName: c.full_name,
+    roleTitle: role?role.title:'',
+    department: role?(DEPT_DISPLAY[role.department]||role.department):'',
+    employmentType: role?role.employment_type:'permanent',
+    joiningDate: fmt(joining),
+    ctc: ctc,
+    probationMonths: probation,
+    noticeDays: notice,
+    signatoryName: sigName,
+    signatoryDesignation: sigDesig,
+    generatedDate: new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})
+  });
+
+  // Convert to base64 for upload
+  var b64 = btoa(unescape(encodeURIComponent(letterHtml)));
+  var fileName = 'Offer Letter - '+c.full_name+' - '+new Date().toISOString().split('T')[0]+'.html';
+
+  // Upload to Drive
+  var folderId = c.drive_folder_id;
+  var driveLink = null;
+
+  if(folderId){
+    var dr = await driveCall({action:'upload_file',folderId:folderId,fileName:fileName,base64:b64,mimeType:'text/html'});
+    if(dr&&dr.fileLink) driveLink=dr.fileLink;
+  }
+
+  // Save to scout_offers
+  var offerPayload={candidate_id:candId,role_id:c.role_id,ctc:ctc,joining_date:joining,probation_months:parseInt(probation),notice_period_days:parseInt(notice),signatory_name:sigName,signatory_designation:sigDesig,status:'sent'};
+  if(driveLink)offerPayload.offer_letter_drive_link=driveLink;
+  await db.from('scout_offers').insert(offerPayload);
+
+  // Move stage to offer_sent
+  await db.from('scout_candidates').update({stage:'offer_sent'}).eq('id',candId);
+  var cnd=ALL_CANDIDATES.find(function(x){return x.id===candId;});
+  if(cnd)cnd.stage='offer_sent';
+
+  btn.disabled=false; spin.style.display='none';
+  closeM('m-offer');
+
+  // Download locally
+  downloadHTML(letterHtml, fileName);
+  toast(driveLink?'Offer letter saved to Drive and downloaded.':'Offer letter downloaded. Drive save skipped (no folder).');
+  renderDashboard();
+}
+
+function generateOfferLetterHTML(data){
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>body{font-family:Georgia,serif;font-size:13px;line-height:1.8;color:#111;max-width:750px;margin:40px auto;padding:0 40px;}h1{font-size:18px;margin-bottom:4px;}h3{font-size:14px;margin-bottom:6px;margin-top:24px;}p{margin-bottom:12px;}table{width:100%;border-collapse:collapse;margin:16px 0;}td{padding:8px 12px;border:1px solid #ddd;font-size:13px;}.header{border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:24px;}.footer{margin-top:60px;border-top:1px solid #ddd;padding-top:20px;}</style></head><body>'+
+  '<div class="header"><h1>Buttertoast</h1><p style="color:#666;font-size:12px;">Date: '+data.generatedDate+'</p></div>'+
+  '<p>Dear <strong>'+esc(data.candidateName)+'</strong>,</p>'+
+  '<p>We are pleased to extend this offer of employment for the position of <strong>'+esc(data.roleTitle)+'</strong> at Buttertoast. We believe your skills and experience will be a valuable addition to our team.</p>'+
+  '<h3>Terms of Employment</h3>'+
+  '<table><tr><td><strong>Position</strong></td><td>'+esc(data.roleTitle)+'</td></tr>'+
+  (data.department?'<tr><td><strong>Department</strong></td><td>'+esc(data.department)+'</td></tr>':'')+
+  '<tr><td><strong>Employment Type</strong></td><td>'+esc(data.employmentType)+'</td></tr>'+
+  '<tr><td><strong>Date of Joining</strong></td><td>'+esc(data.joiningDate)+'</td></tr>'+
+  '<tr><td><strong>Compensation</strong></td><td>'+esc(data.ctc)+'</td></tr>'+
+  '<tr><td><strong>Probation Period</strong></td><td>'+esc(data.probationMonths)+' months</td></tr>'+
+  '<tr><td><strong>Notice Period</strong></td><td>'+esc(data.noticeDays)+' days</td></tr></table>'+
+  '<p>This offer is contingent upon successful completion of any applicable background verification and the submission of required documents prior to or on your joining date.</p>'+
+  '<p>Please sign and return a copy of this letter as your formal acceptance of this offer. By signing, you confirm your agreement with the terms stated herein.</p>'+
+  '<p>We look forward to welcoming you to the Buttertoast team.</p>'+
+  '<div class="footer">'+
+  '<p>Warm regards,</p>'+
+  '<p><strong>'+esc(data.signatoryName)+'</strong><br/>'+esc(data.signatoryDesignation)+'<br/>Buttertoast</p>'+
+  '<br/><br/>'+
+  '<p>Accepted by: _______________________________&nbsp;&nbsp;&nbsp;&nbsp; Date: _______________</p>'+
+  '<p>'+esc(data.candidateName)+'</p>'+
+  '</div></body></html>';
+}
+
+function downloadHTML(html, fileName){
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download=fileName;
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);document.body.removeChild(a);},1000);
+}
+
+// ── CONVERT TO EMPLOYEE ───────────────────────────────────────────────────────
+function openConvertModal(candidateId){
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  if(!c)return;
+  var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
+  document.getElementById('conv-cand-id').value=candidateId;
+  document.getElementById('conv-joining').value=new Date().toISOString().split('T')[0];
+  document.getElementById('conv-desig').value=role?role.title:'';
+  document.getElementById('conv-dept').value=role&&role.department?role.department:'design';
+  document.getElementById('conv-type').value=role&&role.employment_type?role.employment_type:'permanent';
+  document.getElementById('conv-aadhaar').value='';
+  document.getElementById('conv-pan').value='';
+  document.getElementById('conv-bank').value='';
+  document.getElementById('conv-acc').value='';
+  document.getElementById('conv-ifsc').value='';
+  document.getElementById('conv-emp-id').value='';
+  closeM('m-candidate');
+  openM('m-convert');
+}
+
+async function doConvert(){
+  var btn=document.getElementById('btn-convert');
+  var spin=document.getElementById('conv-spin');
+  var candId=document.getElementById('conv-cand-id').value;
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candId;});
+  if(!c)return;
+
+  var empId=document.getElementById('conv-emp-id').value.trim();
+  var joining=document.getElementById('conv-joining').value;
+  var desig=document.getElementById('conv-desig').value.trim();
+  if(!empId||!joining||!desig){toast('Employee ID, joining date and designation are required.','fail');return;}
+
+  btn.disabled=true; spin.style.display='inline-block';
+
+  // 1. Create employee Drive folder
+  var driveFolderData=null;
+  try{
+    var dr=await driveCall({action:'create_employee_folder',employeeId:empId,name:c.full_name});
+    if(dr&&!dr.error)driveFolderData=dr;
+  }catch(e){}
+
+  // 2. Create Supabase auth user (invite)
+  // Note: creating users requires admin API - store for manual creation
+  // Instead, save all details to a staging table or directly to employee_profiles
+  // For now: create profiles + employee_profiles row with all data
+
+  // We'll store the pending employee data in scout_candidates as metadata
+  // and flag it for Roster admin to finalize the auth user creation
+  var convData={
+    aadhaar: document.getElementById('conv-aadhaar').value.trim()||null,
+    pan: document.getElementById('conv-pan').value.trim()||null,
+    bank_name: document.getElementById('conv-bank').value.trim()||null,
+    account_number: document.getElementById('conv-acc').value.trim()||null,
+    ifsc: document.getElementById('conv-ifsc').value.trim()||null,
+    employee_id: empId,
+    joining_date: joining,
+    designation: desig,
+    department: document.getElementById('conv-dept').value,
+    employment_type: document.getElementById('conv-type').value,
+    drive_folder_id: driveFolderData?driveFolderData.folderId:null,
+    drive_folder_link: driveFolderData?driveFolderData.folderLink:null,
+    company_docs_folder_id: driveFolderData?driveFolderData.companyDocsFolderId:null,
+    signed_copies_folder_id: driveFolderData?driveFolderData.signedCopiesFolderId:null
+  };
+
+  // Save conversion record
+  await db.from('scout_candidates').update({
+    stage:'hired',
+    notes:(c.notes||'')+'\n[CONVERTED TO EMPLOYEE: '+new Date().toISOString()+']'
+  }).eq('id',candId);
+
+  // Store employee details in scout_offers (reuse) or dedicated field
+  // Save to a JSON notes field for Roster admin to pick up
+  await db.from('scout_candidates').update({
+    notes:(c.notes||'')+'[EMPLOYEE_DATA:'+JSON.stringify(convData)+']'
+  }).eq('id',candId);
+
+  var cnd=ALL_CANDIDATES.find(function(x){return x.id===candId;});
+  if(cnd)cnd.stage='hired';
+
+  btn.disabled=false; spin.style.display='none';
+  closeM('m-convert');
+  toast('Candidate marked as hired. Employee folder created in Drive. Roster admin to complete user setup.');
+  renderDashboard();
+}
+
+// ── DRIVE HELPER ──────────────────────────────────────────────────────────────
+async function driveCall(payload){
+  try{
+    var r=await fetch(DRIVE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    return await r.json();
+  }catch(e){
+    console.error('Drive call failed:',e);
+    return {error:e.message};
+  }
+}
+</script>
+</body>
+</html>
