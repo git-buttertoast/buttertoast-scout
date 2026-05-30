@@ -252,6 +252,17 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
   .mbg{left:0;}
   .mob-topbar,.mob-overlay{display:none!important;}
 }
+
+.jd-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px;}
+.jd-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;}
+.jd-card-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;cursor:pointer;}
+.jd-card-hd:hover{background:var(--bg3);}
+.jd-card-title{font-size:14px;font-weight:600;color:#fff;flex:1;}
+.jd-card-meta{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap;}
+.jd-card-body{padding:0 16px 14px;white-space:pre-wrap;font-size:12px;color:var(--text3);line-height:1.7;border-top:1px solid var(--border);display:none;}
+.jd-card-body.open{display:block;}
+.jd-expand-icon{font-size:10px;color:var(--text3);transition:transform 0.2s;flex-shrink:0;}
+.jd-expand-icon.open{transform:rotate(180deg);}
 </style>
 </head>
 <body>
@@ -411,6 +422,60 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         <div class="ph-actions">
           <button class="btn bp" onclick="openJDModal()">+ Add JD</button>
         </div>
+      </div>
+      <div class="jd-filters">
+        <select class="inp bxs" id="jdf-dept" onchange="renderJDLibrary()" style="min-width:140px;">
+          <option value="">All departments</option>
+          <option value="design">Design</option>
+          <option value="video">Video &amp; Motion</option>
+          <option value="content">Content &amp; Copy</option>
+          <option value="strategy">Strategy</option>
+          <option value="account_management">Account Management</option>
+          <option value="business_development">Business Development</option>
+          <option value="paid_media">Paid Media</option>
+          <option value="seo">SEO</option>
+          <option value="web_development">Web Development</option>
+          <option value="consulting">Consulting</option>
+          <option value="operations">Operations</option>
+          <option value="hr">People &amp; HR</option>
+          <option value="finance">Finance</option>
+        </select>
+        <select class="inp bxs" id="jdf-role" onchange="renderJDLibrary()" style="min-width:160px;">
+          <option value="">All roles</option>
+          <option value="graphic_designer">Graphic Designer</option>
+          <option value="motion_designer">Motion Designer</option>
+          <option value="ui_ux_designer">UI/UX Designer</option>
+          <option value="art_director">Art Director</option>
+          <option value="video_editor">Video Editor</option>
+          <option value="cinematographer">Cinematographer</option>
+          <option value="content_writer">Content Writer</option>
+          <option value="copywriter">Copywriter</option>
+          <option value="social_media_manager">Social Media Manager</option>
+          <option value="brand_strategist">Brand Strategist</option>
+          <option value="account_manager">Account Manager</option>
+          <option value="business_developer">Business Developer</option>
+          <option value="media_planner">Media Planner</option>
+          <option value="media_buyer">Media Buyer</option>
+          <option value="seo_specialist">SEO Specialist</option>
+          <option value="frontend_developer">Frontend Developer</option>
+          <option value="backend_developer">Backend Developer</option>
+          <option value="consultant">Consultant</option>
+          <option value="project_manager">Project Manager</option>
+          <option value="operations_manager">Operations Manager</option>
+          <option value="hr_manager">HR Manager</option>
+          <option value="finance_manager">Finance Manager</option>
+        </select>
+        <select class="inp bxs" id="jdf-sen" onchange="renderJDLibrary()" style="min-width:130px;">
+          <option value="">All levels</option>
+          <option value="intern">Intern</option>
+          <option value="junior">Junior</option>
+          <option value="mid">Mid-level</option>
+          <option value="senior">Senior</option>
+          <option value="lead">Lead</option>
+          <option value="head">Head</option>
+        </select>
+        <button class="btn bg2x bxs" onclick="clearJDFilters()" id="jdf-clear" style="display:none;">Clear filters</button>
+        <span id="jdf-count" style="font-size:12px;color:var(--text3);margin-left:4px;"></span>
       </div>
       <div id="jd-body"></div>
     </div>
@@ -828,12 +893,14 @@ var ACTIVE_CANDIDATE = null;
 var ROLE_DISPLAY = {
   graphic_designer:'Graphic Designer',motion_designer:'Motion Designer',
   ui_ux_designer:'UI/UX Designer',art_director:'Art Director',
-  video_editor:'Video Editor',content_writer:'Content Writer',
+  video_editor:'Video Editor',cinematographer:'Cinematographer',
+  content_writer:'Content Writer',copywriter:'Copywriter',
   social_media_manager:'Social Media Manager',brand_strategist:'Brand Strategist',
   account_manager:'Account Manager',business_developer:'Business Developer',media_planner:'Media Planner',
   media_buyer:'Media Buyer',seo_specialist:'SEO Specialist',
   frontend_developer:'Frontend Developer',
-  backend_developer:'Backend Developer',project_manager:'Project Manager',
+  backend_developer:'Backend Developer',consultant:'Consultant',
+  project_manager:'Project Manager',
   operations_manager:'Operations Manager',hr_manager:'HR Manager',
   finance_manager:'Finance Manager'
 };
@@ -1683,34 +1750,85 @@ async function driveCall(payload){
 }
 
 // ── JD LIBRARY ────────────────────────────────────────────────────────────────
+var JD_ROLE_DEPT={'graphic_designer':'design','motion_designer':'design','ui_ux_designer':'design','art_director':'design','video_editor':'video','cinematographer':'video','content_writer':'content','copywriter':'content','social_media_manager':'content','brand_strategist':'strategy','account_manager':'account_management','business_developer':'business_development','media_planner':'paid_media','media_buyer':'paid_media','seo_specialist':'seo','frontend_developer':'web_development','backend_developer':'web_development','consultant':'consulting','project_manager':'operations','operations_manager':'operations','hr_manager':'hr','finance_manager':'finance'};
+var JD_SEN_ORDER=['intern','junior','mid','senior','lead','head','director','founder'];
+
+function clearJDFilters(){
+  ['jdf-dept','jdf-role','jdf-sen'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  renderJDLibrary();
+}
+
+function toggleJDCard(id){
+  var body=document.getElementById('jdb-'+id);
+  var icon=document.getElementById('jdi-'+id);
+  if(!body) return;
+  body.classList.toggle('open',!body.classList.contains('open'));
+  if(icon) icon.classList.toggle('open',!icon.classList.contains('open'));
+}
+
 function renderJDLibrary(){
-  var html='';
-  if(!ALL_JDS.length){
-    html='<div class="empty">No JD templates yet. Add your first one.</div>';
-    document.getElementById('jd-body').innerHTML=html;
+  var deptF=(document.getElementById('jdf-dept')||{value:''}).value;
+  var roleF=(document.getElementById('jdf-role')||{value:''}).value;
+  var senF=(document.getElementById('jdf-sen')||{value:''}).value;
+  var clearBtn=document.getElementById('jdf-clear');
+  var countEl=document.getElementById('jdf-count');
+  if(clearBtn) clearBtn.style.display=(deptF||roleF||senF)?'':'none';
+  var filtered=ALL_JDS.filter(function(j){
+    if(roleF&&j.role_type!==roleF) return false;
+    if(senF&&j.seniority_level!==senF) return false;
+    if(deptF){var rd=JD_ROLE_DEPT[j.role_type]||'';if(rd!==deptF) return false;}
+    return true;
+  });
+  filtered.sort(function(a,b){
+    var ra=ROLE_DISPLAY[a.role_type]||a.role_type||'';
+    var rb=ROLE_DISPLAY[b.role_type]||b.role_type||'';
+    if(ra<rb) return -1; if(ra>rb) return 1;
+    return JD_SEN_ORDER.indexOf(a.seniority_level)-JD_SEN_ORDER.indexOf(b.seniority_level);
+  });
+  if(countEl) countEl.textContent=filtered.length+' of '+ALL_JDS.length+' JDs';
+  if(!filtered.length){
+    document.getElementById('jd-body').innerHTML='<div class="empty">No JDs match the selected filters.</div>';
     return;
   }
-  ALL_JDS.forEach(function(j){
+  var frag=document.createDocumentFragment();
+  filtered.forEach(function(j){
     var usedBy=ALL_ROLES.filter(function(r){return r.jd_template_id===j.id;});
     var roleLabel=j.role_type?(ROLE_DISPLAY[j.role_type]||j.role_type):'All roles';
     var senLabel=j.seniority_level?j.seniority_level.charAt(0).toUpperCase()+j.seniority_level.slice(1):'All levels';
-    html+='<div class="tpl-card">'+
-      '<div class="tpl-card-hd">'+
-        '<span class="tpl-card-title">'+esc(j.title)+'</span>'+
-        '<div style="display:flex;gap:6px;align-items:center;">'+
-          '<span class="tpl-card-stage">'+esc(roleLabel)+'</span>'+
-          '<span class="tpl-card-stage">'+esc(senLabel)+'</span>'+
-          (usedBy.length?'<span class="tpl-card-stage" style="color:var(--green);">Used in '+usedBy.length+' role'+(usedBy.length>1?'s':'')+'</span>':'')+
-          '<button class="btn bg2x bxs" data-jdid="'+j.id+'" data-action="edit-jd">Edit</button>'+
-          '<button class="btn bg2x bxs" data-jdid="'+j.id+'" data-action="dl-jd">Download</button>'+
-        '</div>'+
-      '</div>'+
-      (j.content?'<div class="tpl-card-body" style="margin-top:8px;white-space:pre-wrap;max-height:120px;overflow:hidden;position:relative;">'+
-        esc(j.content.substring(0,300))+(j.content.length>300?'...':'')+'</div>':'')+
-      (usedBy.length?'<div style="margin-top:8px;font-size:11px;color:var(--text3);">Used by: '+usedBy.map(function(r){return esc(r.title);}).join(', ')+'</div>':'')+
-    '</div>';
+    var card=document.createElement('div'); card.className='jd-card';
+    var hd=document.createElement('div'); hd.className='jd-card-hd';
+    hd.addEventListener('click',function(e){
+      if(e.target.tagName==='BUTTON') return;
+      toggleJDCard(j.id);
+    });
+    var metaHtml='<span class="jd-card-title">'+esc(j.title)+'</span>'
+      +'<div class="jd-card-meta">'
+      +'<span class="tpl-card-stage">'+esc(roleLabel)+'</span>'
+      +'<span class="tpl-card-stage">'+esc(senLabel)+'</span>'
+      +(usedBy.length?'<span class="tpl-card-stage" style="color:var(--green);">Used in '+usedBy.length+' role'+(usedBy.length>1?'s':'')+'</span>':'')
+      +'<button class="btn bg2x bxs" data-jdid="'+j.id+'" data-action="edit-jd">Edit</button>'
+      +'<button class="btn bg2x bxs" data-jdid="'+j.id+'" data-action="dl-jd">Download</button>'
+      +'</div>'
+      +'<span class="jd-expand-icon" id="jdi-'+j.id+'">&#9660;</span>';
+    hd.innerHTML=metaHtml;
+    var body=document.createElement('div'); body.className='jd-card-body'; body.id='jdb-'+j.id;
+    if(j.content){
+      var pre=document.createElement('div'); pre.style.marginBottom='10px'; pre.textContent=j.content;
+      body.appendChild(pre);
+    }
+    if(usedBy.length){
+      var ul=document.createElement('div'); ul.style.cssText='font-size:11px;color:var(--green);margin-bottom:8px;';
+      ul.textContent='Used by: '+usedBy.map(function(r){return r.title;}).join(', ');
+      body.appendChild(ul);
+    }
+    card.appendChild(hd); card.appendChild(body);
+    frag.appendChild(card);
   });
-  document.getElementById('jd-body').innerHTML=html;
+  var el=document.getElementById('jd-body');
+  el.innerHTML='';
+  el.appendChild(frag);
 }
 
 function populateJDDropdown(roleType, seniority){
