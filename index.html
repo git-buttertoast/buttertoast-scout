@@ -551,77 +551,58 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 
 <!-- ADD/EDIT ROLE MODAL -->
 <div class="mbg mbg-c" id="m-role">
-  <div class="modal">
+  <div class="modal" style="max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;">
     <h2 id="m-role-title">Add role</h2>
     <p class="msub">Define the position you are hiring for.</p>
     <input type="hidden" id="r-id"/>
-    <div class="frow"><label class="lbl">Job title *</label><input class="inp" id="r-title" placeholder="e.g. Senior Graphic Designer"/></div>
     <div class="fgrid">
       <div class="frow"><label class="lbl">Role type</label>
-        <select class="inp" id="r-role-type" onchange="populateJDDropdown(this.value,document.getElementById('r-seniority').value)">
-          <option value="">-- Select --</option>
-            <option value="">-- Select role --</option>
-            <option value="graphic_designer">Graphic Designer</option>
-            <option value="motion_designer">Motion Designer</option>
-            <option value="ui_ux_designer">UI/UX Designer</option>
-            <option value="art_director">Art Director</option>
-            <option value="video_editor">Video Editor</option>
-            <option value="content_writer">Content Writer</option>
-            <option value="brand_strategist">Brand Strategist</option>
-            <option value="account_manager">Account Manager</option>
-            <option value="business_developer">Business Developer</option>
-            <option value="media_planner">Media Planner</option>
-            <option value="media_buyer">Media Buyer</option>
-            <option value="seo_specialist">SEO Specialist</option>
-            <option value="frontend_developer">Frontend Developer</option>
-            <option value="backend_developer">Backend Developer</option>
-            <option value="project_manager">Project Manager</option>
-            <option value="operations_manager">Operations Manager</option>
-            <option value="hr_manager">HR Manager</option>
-            <option value="finance_manager">Finance Manager</option>
+        <select class="inp" id="r-role-type" onchange="onRoleTypeChange()">
+          <option value="">-- Select role --</option>
+          <option value="graphic_designer">Graphic Designer</option>
+          <option value="motion_designer">Motion Designer</option>
+          <option value="ui_ux_designer">UI/UX Designer</option>
+          <option value="art_director">Art Director</option>
+          <option value="video_editor">Video Editor</option>
+          <option value="cinematographer">Cinematographer</option>
+          <option value="content_writer">Content Writer</option>
+          <option value="copywriter">Copywriter</option>
+          <option value="brand_strategist">Brand Strategist</option>
+          <option value="account_manager">Account Manager</option>
+          <option value="business_developer">Business Developer</option>
+          <option value="media_planner">Media Planner</option>
+          <option value="media_buyer">Media Buyer</option>
+          <option value="seo_specialist">SEO Specialist</option>
+          <option value="frontend_developer">Frontend Developer</option>
+          <option value="backend_developer">Backend Developer</option>
+          <option value="consultant">Consultant</option>
+          <option value="project_manager">Project Manager</option>
+          <option value="operations_manager">Operations Manager</option>
+          <option value="hr_manager">HR Manager</option>
+          <option value="finance_manager">Finance Manager</option>
         </select>
       </div>
       <div class="frow"><label class="lbl">Seniority level</label>
-        <select class="inp" id="r-seniority" onchange="populateJDDropdown(document.getElementById('r-role-type').value,this.value)">
-          <option value="">-- Select --</option>
-            <option value="">-- Select seniority --</option>
-            <option value="intern">Intern</option>
-            <option value="junior">Junior</option>
-            <option value="mid">Mid-level</option>
-            <option value="senior">Senior</option>
-            <option value="lead">Lead</option>
-            <option value="head">Head</option>
-            <option value="director">Director</option>
-            <option value="founder" disabled style="color:#555">Founder</option>
+        <select class="inp" id="r-seniority" onchange="onRoleSeniorityChange()">
+          <option value="">-- Select seniority --</option>
+          <option value="intern">Intern</option>
+          <option value="junior">Junior</option>
+          <option value="mid">Mid-level</option>
+          <option value="senior">Senior</option>
+          <option value="lead">Lead</option>
+          <option value="head">Head</option>
+          <option value="director">Director</option>
         </select>
       </div>
     </div>
+    <div class="frow"><label class="lbl">Job title *</label><input class="inp" id="r-title" placeholder="Auto-filled from role + seniority"/></div>
     <div class="frow"><label class="lbl">Job Description</label>
-      <select class="inp" id="r-jd" onchange="void(0)">
+      <select class="inp" id="r-jd" onchange="onRoleJDChange()">
         <option value="">-- No JD assigned --</option>
       </select>
       <div id="r-jd-hint" style="font-size:11px;color:var(--text3);margin-top:4px;">Select role type and seniority above to filter relevant JDs.</div>
     </div>
     <div class="fgrid">
-      <div class="frow"><label class="lbl">Department</label>
-        <select class="inp" id="r-dept">
-          <option value="">-- Select --</option>
-          <option value="design">Design</option>
-          <option value="video">Video</option>
-          <option value="content">Content</option>
-          <option value="strategy">Strategy</option>
-          <option value="account_management">Account Management</option>
-          <option value="business_development">Business Development</option>
-          <option value="technology">Technology</option>
-          <option value="finance">Finance</option>
-          <option value="hr">HR</option>
-          <option value="operations">Operations</option>
-          <option value="social_media">Social Media</option>
-          <option value="pr">PR</option>
-          <option value="research">Research</option>
-          <option value="legal">Legal</option>
-        </select>
-      </div>
       <div class="frow"><label class="lbl">Employment type</label>
         <select class="inp" id="r-type">
           <option value="permanent">Permanent</option>
@@ -629,10 +610,12 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
           <option value="intern">Intern</option>
         </select>
       </div>
+      <div class="frow"><label class="lbl">Hire by</label>
+        <input class="inp" id="r-hire-by" type="date"/>
+      </div>
     </div>
-    <div class="frow"><label class="lbl">Description</label><textarea class="inp" id="r-desc" placeholder="What does this role do?"></textarea></div>
-    <div class="frow"><label class="lbl">Requirements</label><textarea class="inp" id="r-req" placeholder="Skills, experience, tools..."></textarea></div>
     <div class="frow"><label class="lbl">Budget (tentative)</label><input class="inp" id="r-budget" placeholder="e.g. &#8377;4&ndash;6 LPA or &#8377;15,000/month stipend"/></div>
+    <div class="frow" id="r-notes-row"><label class="lbl">Notes</label><textarea class="inp" id="r-desc" placeholder="Anything specific about this opening..." style="min-height:80px;"></textarea></div>
     <div class="frow"><label class="lbl">Status</label>
       <select class="inp" id="r-status">
         <option value="open">Open</option>
@@ -640,7 +623,9 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         <option value="closed">Closed</option>
       </select>
     </div>
-    <div class="mf">
+    <input type="hidden" id="r-dept"/>
+    <input type="hidden" id="r-req"/>
+    <div class="mf" style="position:sticky;bottom:0;background:var(--bg2);padding:12px 0 0;margin-top:8px;border-top:1px solid var(--border);">
       <button class="btn bg2x" onclick="closeM('m-role')">Cancel</button>
       <button class="btn bp" id="btn-save-role" onclick="saveRole()">Save role</button>
     </div>
@@ -762,7 +747,6 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
             <option value="business_development">Business Development</option>
             <option value="technology">Technology</option><option value="finance">Finance</option>
             <option value="hr">HR</option><option value="operations">Operations</option>
-            <option value="social_media">Social Media</option>
             <option value="pr">PR</option><option value="research">Research</option>
             <option value="legal">Legal</option>
           </select>
@@ -1436,6 +1420,35 @@ async function saveCandidate(){
 }
 
 // ── ROLES CRUD ────────────────────────────────────────────────────────────────
+function onRoleTypeChange(){
+  var role=document.getElementById('r-role-type').value;
+  var sen=document.getElementById('r-seniority').value;
+  // Auto-set department from role
+  var dept=JD_ROLE_DEPT[role]||'';
+  document.getElementById('r-dept').value=dept;
+  // Auto-suggest title
+  if(role&&sen){
+    var suggested=autoDesignation(sen,role,dept);
+    if(suggested) document.getElementById('r-title').value=suggested;
+  }
+  populateJDDropdown(role,sen);
+}
+function onRoleSeniorityChange(){
+  var role=document.getElementById('r-role-type').value;
+  var sen=document.getElementById('r-seniority').value;
+  var dept=JD_ROLE_DEPT[role]||'';
+  if(role&&sen){
+    var suggested=autoDesignation(sen,role,dept);
+    if(suggested) document.getElementById('r-title').value=suggested;
+  }
+  populateJDDropdown(role,sen);
+}
+function onRoleJDChange(){
+  // When JD is selected, notes field label updates
+  var jdVal=document.getElementById('r-jd').value;
+  var notesLabel=document.querySelector('#r-notes-row .lbl');
+  if(notesLabel) notesLabel.textContent=jdVal?'Notes (JD attached -- add role-specific notes)':'Notes';
+}
 function openRoleModal(){
   document.getElementById('m-role-title').textContent='Add role';
   document.getElementById('r-id').value='';
@@ -1443,11 +1456,12 @@ function openRoleModal(){
   document.getElementById('r-role-type').value='';
   document.getElementById('r-seniority').value='';
   document.getElementById('r-dept').value='';
+  document.getElementById('r-req').value='';
   document.getElementById('r-type').value='permanent';
   document.getElementById('r-desc').value='';
-  document.getElementById('r-req').value='';
   document.getElementById('r-status').value='open';
   document.getElementById('r-budget').value='';
+  document.getElementById('r-hire-by').value='';
   document.getElementById('r-jd').value='';
   populateJDDropdown('','');
   openM('m-role');
@@ -1461,14 +1475,18 @@ function openEditRole(id){
   document.getElementById('r-title').value=r.title||'';
   document.getElementById('r-role-type').value=r.role_type||'';
   document.getElementById('r-seniority').value=r.seniority_level||'';
-  document.getElementById('r-dept').value=r.department||'';
+  document.getElementById('r-dept').value=r.department||JD_ROLE_DEPT[r.role_type]||'';
+  document.getElementById('r-req').value=r.requirements||'';
   document.getElementById('r-type').value=r.employment_type||'permanent';
   document.getElementById('r-desc').value=r.description||'';
-  document.getElementById('r-req').value=r.requirements||'';
   document.getElementById('r-status').value=r.status||'open';
   document.getElementById('r-budget').value=r.budget||'';
+  document.getElementById('r-hire-by').value=r.hire_by_date||'';
   populateJDDropdown(r.role_type||'',r.seniority_level||'');
   document.getElementById('r-jd').value=r.jd_template_id||'';
+  // Update notes label
+  var notesLabel=document.querySelector('#r-notes-row .lbl');
+  if(notesLabel) notesLabel.textContent=r.jd_template_id?'Notes (JD attached -- add role-specific notes)':'Notes';
   openM('m-role');
 }
 
@@ -1478,7 +1496,7 @@ async function saveRole(){
   if(!title){toast('Title is required.','fail');return;}
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
   var id=document.getElementById('r-id').value;
-  var payload={title:title,role_type:document.getElementById('r-role-type').value||null,seniority_level:document.getElementById('r-seniority').value||null,department:document.getElementById('r-dept').value||null,employment_type:document.getElementById('r-type').value,description:document.getElementById('r-desc').value.trim()||null,requirements:document.getElementById('r-req').value.trim()||null,budget:document.getElementById('r-budget').value.trim()||null,jd_template_id:document.getElementById('r-jd').value||null,status:document.getElementById('r-status').value};
+  var payload={title:title,role_type:document.getElementById('r-role-type').value||null,seniority_level:document.getElementById('r-seniority').value||null,department:document.getElementById('r-dept').value||null,employment_type:document.getElementById('r-type').value,description:document.getElementById('r-desc').value.trim()||null,budget:document.getElementById('r-budget').value.trim()||null,hire_by_date:document.getElementById('r-hire-by').value||null,jd_template_id:document.getElementById('r-jd').value||null,status:document.getElementById('r-status').value};
   var r=id?await db.from('scout_roles').update(payload).eq('id',id):await db.from('scout_roles').insert({...payload,created_by:ME.id});
   btn.disabled=false; btn.innerHTML='Save role';
   if(r.error){toast('Failed to save.','fail');return;}
@@ -1776,8 +1794,8 @@ async function driveCall(payload){
 var JD_ROLE_DEPT={'graphic_designer':'design','motion_designer':'design','ui_ux_designer':'design','art_director':'design','video_editor':'video','cinematographer':'video','content_writer':'content','copywriter':'content','brand_strategist':'strategy','account_manager':'account_management','business_developer':'business_development','media_planner':'paid_media','media_buyer':'paid_media','seo_specialist':'seo','frontend_developer':'web_development','backend_developer':'web_development','consultant':'consulting','project_manager':'operations','operations_manager':'operations','hr_manager':'hr','finance_manager':'finance'};
 var JD_SEN_ORDER=['intern','junior','mid','senior','lead','head','director','founder'];
 
-var JD_DEPT_ROLES={"design": ["graphic_designer", "motion_designer", "ui_ux_designer", "art_director"], "video": ["video_editor", "cinematographer"], "content": ["content_writer", "copywriter", "social_media_manager"], "strategy": ["brand_strategist"], "account_management": ["account_manager"], "business_development": ["business_developer"], "paid_media": ["media_planner", "media_buyer"], "seo": ["seo_specialist"], "web_development": ["frontend_developer", "backend_developer"], "consulting": ["consultant"], "operations": ["project_manager", "operations_manager"], "hr": ["hr_manager"], "finance": ["finance_manager"]};
-var JD_ALL_ROLE_OPTIONS=[["Graphic Designer", "graphic_designer"], ["Motion Designer", "motion_designer"], ["UI/UX Designer", "ui_ux_designer"], ["Art Director", "art_director"], ["Video Editor", "video_editor"], ["Cinematographer", "cinematographer"], ["Content Writer", "content_writer"], ["Copywriter", "copywriter"], ["Social Media Manager", "social_media_manager"], ["Brand Strategist", "brand_strategist"], ["Account Manager", "account_manager"], ["Business Developer", "business_developer"], ["Media Planner", "media_planner"], ["Media Buyer", "media_buyer"], ["SEO Specialist", "seo_specialist"], ["Frontend Developer", "frontend_developer"], ["Backend Developer", "backend_developer"], ["Consultant", "consultant"], ["Project Manager", "project_manager"], ["Operations Manager", "operations_manager"], ["HR Manager", "hr_manager"], ["Finance Manager", "finance_manager"]];
+var JD_DEPT_ROLES={"design": ["graphic_designer", "motion_designer", "ui_ux_designer", "art_director"], "video": ["video_editor", "cinematographer"], "content": ["content_writer", "copywriter"], "strategy": ["brand_strategist"], "account_management": ["account_manager"], "business_development": ["business_developer"], "paid_media": ["media_planner", "media_buyer"], "seo": ["seo_specialist"], "web_development": ["frontend_developer", "backend_developer"], "consulting": ["consultant"], "operations": ["project_manager", "operations_manager"], "hr": ["hr_manager"], "finance": ["finance_manager"]};
+var JD_ALL_ROLE_OPTIONS=[["Graphic Designer", "graphic_designer"], ["Motion Designer", "motion_designer"], ["UI/UX Designer", "ui_ux_designer"], ["Art Director", "art_director"], ["Video Editor", "video_editor"], ["Cinematographer", "cinematographer"], ["Content Writer", "content_writer"], ["Copywriter", "copywriter"], ["Brand Strategist", "brand_strategist"], ["Account Manager", "account_manager"], ["Business Developer", "business_developer"], ["Media Planner", "media_planner"], ["Media Buyer", "media_buyer"], ["SEO Specialist", "seo_specialist"], ["Frontend Developer", "frontend_developer"], ["Backend Developer", "backend_developer"], ["Consultant", "consultant"], ["Project Manager", "project_manager"], ["Operations Manager", "operations_manager"], ["HR Manager", "hr_manager"], ["Finance Manager", "finance_manager"]];
 
 function onDeptFilterChange(){
   var deptF=document.getElementById('jdf-dept').value;
