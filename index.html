@@ -1300,13 +1300,16 @@ function toggleAsgnCard(id){
 }
 
 function getAsgnOptionLabel(title){
-  // Extract option letter from title e.g. "Assignment B --" -> "B"
+  // "Assignment B --" -> "B", "Assignment --" or no letter -> "A"
   var m=title.match(/Assignment ([A-Z]) --/);
-  return m?m[1]:null;
+  if(m) return m[1];
+  // Original assignments have no letter -- they are Option A
+  if(title.match(/Assignment --/) || title.match(/Assignment [^A-Z]/)) return 'A';
+  if(title.includes('Assignment')) return 'A';
+  return null;
 }
 
 function getAsgnIndustry(title){
-  // Extract industry from title e.g. "-- Ceramic Tile Brand" -> "Ceramic Tile Brand"
   var m=title.match(/-- (.+)$/);
   return m?m[1]:null;
 }
@@ -1388,7 +1391,11 @@ function renderAssignments(){
       hdEl.addEventListener('click',function(){toggleAsgnCard(a.id);});
 
       // Clean title -- remove "Assignment X --" prefix for display
-      var displayTitle=a.title.replace(/Assignment [A-Z]? ?-- /,'').replace(/^Assignment -- /,'');
+      // Strip everything up to and including "--" to get just the industry/topic
+var displayTitle=a.title;
+var dashIdx=displayTitle.indexOf(' -- ');
+if(dashIdx>-1) displayTitle=displayTitle.substring(dashIdx+4);
+else displayTitle=displayTitle.replace(/^.+Assignment [A-Z]? /,'').replace(/^Assignment /,'');
 
       hdEl.innerHTML=
         (optLetter?'<span class="asgn-option-badge">Option '+optLetter+'</span>':'')+
