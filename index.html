@@ -450,7 +450,6 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
           <option value="cinematographer">Cinematographer</option>
           <option value="content_writer">Content Writer</option>
           <option value="copywriter">Copywriter</option>
-          <option value="social_media_manager">Social Media Manager</option>
           <option value="brand_strategist">Brand Strategist</option>
           <option value="account_manager">Account Manager</option>
           <option value="business_developer">Business Developer</option>
@@ -568,7 +567,6 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
             <option value="art_director">Art Director</option>
             <option value="video_editor">Video Editor</option>
             <option value="content_writer">Content Writer</option>
-            <option value="social_media_manager">Social Media Manager</option>
             <option value="brand_strategist">Brand Strategist</option>
             <option value="account_manager">Account Manager</option>
             <option value="business_developer">Business Developer</option>
@@ -787,7 +785,6 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
             <option value="art_director">Art Director</option>
             <option value="video_editor">Video Editor</option>
             <option value="content_writer">Content Writer</option>
-            <option value="social_media_manager">Social Media Manager</option>
             <option value="brand_strategist">Brand Strategist</option>
             <option value="account_manager">Account Manager</option>
             <option value="business_developer">Business Developer</option>
@@ -842,7 +839,6 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
           <option value="art_director">Art Director</option>
           <option value="video_editor">Video Editor</option>
           <option value="content_writer">Content Writer</option>
-          <option value="social_media_manager">Social Media Manager</option>
           <option value="brand_strategist">Brand Strategist</option>
           <option value="account_manager">Account Manager</option>
           <option value="business_developer">Business Developer</option>
@@ -895,7 +891,7 @@ var ROLE_DISPLAY = {
   ui_ux_designer:'UI/UX Designer',art_director:'Art Director',
   video_editor:'Video Editor',cinematographer:'Cinematographer',
   content_writer:'Content Writer',copywriter:'Copywriter',
-  social_media_manager:'Social Media Manager',brand_strategist:'Brand Strategist',
+  brand_strategist:'Brand Strategist',
   account_manager:'Account Manager',business_developer:'Business Developer',media_planner:'Media Planner',
   media_buyer:'Media Buyer',seo_specialist:'SEO Specialist',
   frontend_developer:'Frontend Developer',
@@ -905,9 +901,37 @@ var ROLE_DISPLAY = {
   finance_manager:'Finance Manager'
 };
 
+var DESIG_MAP={
+  graphic_designer:{'intern':'Design Intern','junior':'Junior Graphic Designer','mid':'Graphic Designer','senior':'Senior Graphic Designer','lead':'Associate Creative Director','head':'Creative Director','director':'Executive Creative Director'},
+  motion_designer:{'intern':'Design Intern','junior':'Junior Motion Designer','mid':'Motion Designer','senior':'Senior Motion Designer','lead':'Associate Creative Director','head':'Creative Director','director':'Executive Creative Director'},
+  ui_ux_designer:{'intern':'Design Intern','junior':'Junior UI/UX Designer','mid':'UI/UX Designer','senior':'Senior UI/UX Designer','lead':'Associate Creative Director','head':'Creative Director','director':'Executive Creative Director'},
+  art_director:{'intern':'Design Intern','junior':'Junior Art Director','mid':'Art Director','senior':'Senior Art Director','lead':'Associate Creative Director','head':'Creative Director','director':'Executive Creative Director'},
+  copywriter:{'intern':'Copy Intern','junior':'Junior Copywriter','mid':'Copywriter','senior':'Senior Copywriter','lead':'Associate Creative Director','head':'Creative Director','director':'Executive Creative Director'},
+  content_writer:{'intern':'Content Intern','junior':'Junior Content Writer','mid':'Content Writer','senior':'Senior Content Writer','lead':'Associate Creative Director','head':'Creative Director','director':'Executive Creative Director'},
+  video_editor:{'intern':'Production Intern','junior':'Junior Video Editor','mid':'Video Editor','senior':'Senior Video Editor','lead':'Production Lead','head':'Head of Production','director':'Director of Production'},
+  cinematographer:{'intern':'Production Intern','junior':'Junior Cinematographer','mid':'Cinematographer','senior':'Senior Cinematographer','lead':'Production Lead','head':'Head of Production','director':'Director of Production'},
+  brand_strategist:{'intern':'Strategy Intern','junior':'Junior Brand Strategist','mid':'Brand Strategist','senior':'Senior Brand Strategist','lead':'Strategy Director','head':'Chief Strategy Officer','director':'Chief Marketing Officer'},
+  account_manager:{'intern':'Account Management Intern','junior':'Account Executive','mid':'Account Manager','senior':'Senior Account Manager','lead':'Account Director','head':'Group Account Director','director':'Chief Client Officer'},
+  business_developer:{'intern':'BD Intern','junior':'BD Executive','mid':'Business Developer','senior':'Senior Business Developer','lead':'BD Director','head':'Head of Business Development','director':'Chief Growth Officer'},
+  media_planner:{'intern':'Media Intern','junior':'Media Planning Executive','mid':'Media Planner','senior':'Senior Media Planner','lead':'Media Director','head':'Head of Paid Media','director':'Chief Media Officer'},
+  media_buyer:{'intern':'Media Intern','junior':'Media Buying Executive','mid':'Media Buyer','senior':'Senior Media Buyer','lead':'Media Director','head':'Head of Paid Media','director':'Chief Media Officer'},
+  seo_specialist:{'intern':'SEO Intern','junior':'SEO Executive','mid':'SEO Specialist','senior':'Senior SEO Specialist','lead':'SEO Manager','head':'Head of SEO','director':'Director of Search'},
+  frontend_developer:{'intern':'Tech Intern','junior':'Junior Frontend Developer','mid':'Frontend Developer','senior':'Senior Frontend Developer','lead':'Frontend Lead','head':'Head of Technology','director':'Chief Technology Officer'},
+  backend_developer:{'intern':'Tech Intern','junior':'Junior Backend Developer','mid':'Backend Developer','senior':'Senior Backend Developer','lead':'Backend Lead','head':'Head of Technology','director':'Chief Technology Officer'},
+  consultant:{'mid':'Consultant','senior':'Senior Consultant','lead':'Principal Consultant','head':'Consulting Director','director':'Managing Director'},
+  project_manager:{'intern':'Operations Intern','junior':'Project Executive','mid':'Project Manager','senior':'Senior Project Manager','lead':'Project Director','head':'Head of Project Management','director':'Chief of Staff'},
+  operations_manager:{'intern':'Operations Intern','junior':'Operations Executive','mid':'Operations Manager','senior':'Senior Operations Manager','lead':'Operations Director','head':'VP Operations','director':'Chief Operating Officer'},
+  hr_manager:{'intern':'HR Intern','junior':'HR Executive','mid':'HR Manager','senior':'Senior HR Manager','lead':'HR Director','head':'Chief People Officer','director':'Chief Human Resources Officer'},
+  finance_manager:{'intern':'Finance Intern','junior':'Finance Executive','mid':'Finance Manager','senior':'Senior Finance Manager','lead':'Finance Director','head':'VP Finance','director':'Chief Financial Officer'}
+};
+
 function autoDesignation(seniority, role, dept){
-  var rd = ROLE_DISPLAY[role] || (role||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
-  var dd = DEPT_DISPLAY[dept] || (dept||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+  if(seniority==='founder') return 'Founder';
+  var map=DESIG_MAP[role];
+  if(map && map[seniority]) return map[seniority];
+  // Fallback for roles not in map
+  var rd=(ROLE_DISPLAY[role]||(role||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}));
+  var dd=(DEPT_DISPLAY[dept]||(dept||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}));
   if(seniority==='intern')   return (dd?dd+' ':'')+'Intern';
   if(seniority==='junior')   return 'Junior '+(rd||'');
   if(seniority==='mid')      return rd||'';
@@ -915,7 +939,6 @@ function autoDesignation(seniority, role, dept){
   if(seniority==='lead')     return (rd||'Lead')+' Lead';
   if(seniority==='head')     return 'Head of '+(dd||'');
   if(seniority==='director') return 'Director of '+(dd||'');
-  if(seniority==='founder')  return 'Founder';
   return '';
 }
 
@@ -1750,7 +1773,7 @@ async function driveCall(payload){
 }
 
 // ── JD LIBRARY ────────────────────────────────────────────────────────────────
-var JD_ROLE_DEPT={'graphic_designer':'design','motion_designer':'design','ui_ux_designer':'design','art_director':'design','video_editor':'video','cinematographer':'video','content_writer':'content','copywriter':'content','social_media_manager':'content','brand_strategist':'strategy','account_manager':'account_management','business_developer':'business_development','media_planner':'paid_media','media_buyer':'paid_media','seo_specialist':'seo','frontend_developer':'web_development','backend_developer':'web_development','consultant':'consulting','project_manager':'operations','operations_manager':'operations','hr_manager':'hr','finance_manager':'finance'};
+var JD_ROLE_DEPT={'graphic_designer':'design','motion_designer':'design','ui_ux_designer':'design','art_director':'design','video_editor':'video','cinematographer':'video','content_writer':'content','copywriter':'content','brand_strategist':'strategy','account_manager':'account_management','business_developer':'business_development','media_planner':'paid_media','media_buyer':'paid_media','seo_specialist':'seo','frontend_developer':'web_development','backend_developer':'web_development','consultant':'consulting','project_manager':'operations','operations_manager':'operations','hr_manager':'hr','finance_manager':'finance'};
 var JD_SEN_ORDER=['intern','junior','mid','senior','lead','head','director','founder'];
 
 var JD_DEPT_ROLES={"design": ["graphic_designer", "motion_designer", "ui_ux_designer", "art_director"], "video": ["video_editor", "cinematographer"], "content": ["content_writer", "copywriter", "social_media_manager"], "strategy": ["brand_strategist"], "account_management": ["account_manager"], "business_development": ["business_developer"], "paid_media": ["media_planner", "media_buyer"], "seo": ["seo_specialist"], "web_development": ["frontend_developer", "backend_developer"], "consulting": ["consultant"], "operations": ["project_manager", "operations_manager"], "hr": ["hr_manager"], "finance": ["finance_manager"]};
