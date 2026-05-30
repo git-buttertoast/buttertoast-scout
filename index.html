@@ -309,6 +309,10 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         Roles
       </button>
       <div class="sb-section">Content</div>
+      <button class="nb" data-page="jd-library">
+        <svg class="ni" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        JD Library
+      </button>
       <button class="nb" data-page="assignments">
         <svg class="ni" viewBox="0 0 16 16" fill="none"><rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M6 6h4M6 9h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Assignments
@@ -400,6 +404,17 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
       <div id="roles-body"></div>
     </div>
 
+    <!-- JD LIBRARY -->
+    <div class="page" id="page-jd-library">
+      <div class="ph">
+        <div class="ph-left"><h1>JD Library</h1><p>Job description templates linked to roles</p></div>
+        <div class="ph-actions">
+          <button class="btn bp" onclick="openJDModal()">+ Add JD</button>
+        </div>
+      </div>
+      <div id="jd-body"></div>
+    </div>
+
     <!-- ASSIGNMENTS -->
     <div class="page" id="page-assignments">
       <div class="ph">
@@ -479,7 +494,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
     <div class="frow"><label class="lbl">Job title *</label><input class="inp" id="r-title" placeholder="e.g. Senior Graphic Designer"/></div>
     <div class="fgrid">
       <div class="frow"><label class="lbl">Role type</label>
-        <select class="inp" id="r-role-type">
+        <select class="inp" id="r-role-type" onchange="populateJDDropdown(this.value,document.getElementById('r-seniority').value)">
           <option value="">-- Select --</option>
             <option value="">-- Select role --</option>
             <option value="graphic_designer">Graphic Designer</option>
@@ -506,7 +521,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         </select>
       </div>
       <div class="frow"><label class="lbl">Seniority level</label>
-        <select class="inp" id="r-seniority">
+        <select class="inp" id="r-seniority" onchange="populateJDDropdown(document.getElementById('r-role-type').value,this.value)">
           <option value="">-- Select --</option>
             <option value="">-- Select seniority --</option>
             <option value="intern">Intern</option>
@@ -519,6 +534,12 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
             <option value="founder">Founder</option>
         </select>
       </div>
+    </div>
+    <div class="frow"><label class="lbl">Job Description</label>
+      <select class="inp" id="r-jd" onchange="void(0)">
+        <option value="">-- No JD assigned --</option>
+      </select>
+      <div id="r-jd-hint" style="font-size:11px;color:var(--text3);margin-top:4px;">Select role type and seniority above to filter relevant JDs.</div>
     </div>
     <div class="fgrid">
       <div class="frow"><label class="lbl">Department</label>
@@ -743,6 +764,62 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
   </div>
 </div>
 
+<!-- ADD/EDIT JD MODAL -->
+<div class="mbg mbg-c" id="m-jd">
+  <div class="modal" style="max-width:600px;">
+    <h2 id="m-jd-title">Add JD</h2>
+    <p class="msub">Create a job description template to assign to roles.</p>
+    <input type="hidden" id="jd-id"/>
+    <div class="frow"><label class="lbl">Title *</label><input class="inp" id="jd-title" placeholder="e.g. Senior Graphic Designer JD"/></div>
+    <div class="fgrid">
+      <div class="frow"><label class="lbl">Role type (optional filter)</label>
+        <select class="inp" id="jd-role-type">
+          <option value="">-- All roles --</option>
+          <option value="graphic_designer">Graphic Designer</option>
+          <option value="motion_designer">Motion Designer</option>
+          <option value="ui_ux_designer">UI/UX Designer</option>
+          <option value="art_director">Art Director</option>
+          <option value="video_editor">Video Editor</option>
+          <option value="content_writer">Content Writer</option>
+          <option value="social_media_manager">Social Media Manager</option>
+          <option value="brand_strategist">Brand Strategist</option>
+          <option value="account_manager">Account Manager</option>
+          <option value="account_executive">Account Executive</option>
+          <option value="business_developer">Business Developer</option>
+          <option value="media_planner">Media Planner</option>
+          <option value="media_buyer">Media Buyer</option>
+          <option value="seo_specialist">SEO Specialist</option>
+          <option value="web_developer">Web Developer</option>
+          <option value="frontend_developer">Frontend Developer</option>
+          <option value="backend_developer">Backend Developer</option>
+          <option value="project_manager">Project Manager</option>
+          <option value="operations_manager">Operations Manager</option>
+          <option value="hr_manager">HR Manager</option>
+          <option value="finance_manager">Finance Manager</option>
+        </select>
+      </div>
+      <div class="frow"><label class="lbl">Seniority (optional filter)</label>
+        <select class="inp" id="jd-seniority">
+          <option value="">-- All levels --</option>
+          <option value="intern">Intern</option>
+          <option value="junior">Junior</option>
+          <option value="mid">Mid-level</option>
+          <option value="senior">Senior</option>
+          <option value="lead">Lead</option>
+          <option value="head">Head</option>
+          <option value="director">Director</option>
+          <option value="founder">Founder</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow"><label class="lbl">Job description content *</label><textarea class="inp" id="jd-content" style="min-height:200px;" placeholder="Write the full job description here. You can use plain text or markdown-style formatting with headers using ## and bullet points with -"></textarea></div>
+    <div class="mf">
+      <button class="btn bg2x" onclick="closeM('m-jd')">Cancel</button>
+      <button class="btn bp" id="btn-save-jd" onclick="saveJD()">Save JD</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -751,7 +828,7 @@ var db = supabase.createClient('https://ferlauhakdbfpwfapxxw.supabase.co','eyJhb
 var DRIVE_URL = 'https://script.google.com/macros/s/AKfycbyVbz5RdpIuwkkyqrvccttilVhxKB71BXWblIC7jrLa4k8G6pqJLMSVWzdE11iq17yvaA/exec';
 
 var ME = null, MY_ROLE = null;
-var ALL_CANDIDATES = [], ALL_ROLES = [], ALL_ASSIGNMENTS = [], ALL_TEMPLATES = [];
+var ALL_CANDIDATES = [], ALL_ROLES = [], ALL_ASSIGNMENTS = [], ALL_TEMPLATES = [], ALL_JDS = [];
 var ACTIVE_CANDIDATE = null;
 
 var ROLE_DISPLAY = {
@@ -884,16 +961,18 @@ async function loadApp(user){
 }
 
 async function loadAllData(){
-  var [cRes,rRes,aRes,tRes] = await Promise.all([
+  var [cRes,rRes,aRes,tRes,jRes] = await Promise.all([
     db.from('scout_candidates').select('*').order('created_at',{ascending:false}),
     db.from('scout_roles').select('*').order('created_at',{ascending:false}),
     db.from('scout_assignments').select('*').order('created_at',{ascending:false}),
-    db.from('scout_templates').select('*').order('created_at',{ascending:false})
+    db.from('scout_templates').select('*').order('created_at',{ascending:false}),
+    db.from('scout_jd_templates').select('*').order('created_at',{ascending:false})
   ]);
   ALL_CANDIDATES = cRes.data||[];
   ALL_ROLES = rRes.data||[];
   ALL_ASSIGNMENTS = aRes.data||[];
   ALL_TEMPLATES = tRes.data||[];
+  ALL_JDS = jRes.data||[];
   populateRoleDropdowns();
 }
 
@@ -945,6 +1024,7 @@ function showPage(page){
   else if(page==='pipeline')renderPipeline();
   else if(page==='candidates')renderCandidates();
   else if(page==='roles')renderRoles();
+  else if(page==='jd-library')renderJDLibrary();
   else if(page==='assignments')renderAssignments();
   else if(page==='templates')renderTemplates();
 }
@@ -1276,6 +1356,8 @@ function openRoleModal(){
   document.getElementById('r-req').value='';
   document.getElementById('r-status').value='open';
   document.getElementById('r-budget').value='';
+  document.getElementById('r-jd').value='';
+  populateJDDropdown('','');
   openM('m-role');
 }
 
@@ -1293,6 +1375,8 @@ function openEditRole(id){
   document.getElementById('r-req').value=r.requirements||'';
   document.getElementById('r-status').value=r.status||'open';
   document.getElementById('r-budget').value=r.budget||'';
+  populateJDDropdown(r.role_type||'',r.seniority_level||'');
+  document.getElementById('r-jd').value=r.jd_template_id||'';
   openM('m-role');
 }
 
@@ -1302,7 +1386,7 @@ async function saveRole(){
   if(!title){toast('Title is required.','fail');return;}
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
   var id=document.getElementById('r-id').value;
-  var payload={title:title,role_type:document.getElementById('r-role-type').value||null,seniority_level:document.getElementById('r-seniority').value||null,department:document.getElementById('r-dept').value||null,employment_type:document.getElementById('r-type').value,description:document.getElementById('r-desc').value.trim()||null,requirements:document.getElementById('r-req').value.trim()||null,budget:document.getElementById('r-budget').value.trim()||null,status:document.getElementById('r-status').value};
+  var payload={title:title,role_type:document.getElementById('r-role-type').value||null,seniority_level:document.getElementById('r-seniority').value||null,department:document.getElementById('r-dept').value||null,employment_type:document.getElementById('r-type').value,description:document.getElementById('r-desc').value.trim()||null,requirements:document.getElementById('r-req').value.trim()||null,budget:document.getElementById('r-budget').value.trim()||null,jd_template_id:document.getElementById('r-jd').value||null,status:document.getElementById('r-status').value};
   var r=id?await db.from('scout_roles').update(payload).eq('id',id):await db.from('scout_roles').insert({...payload,created_by:ME.id});
   btn.disabled=false; btn.innerHTML='Save role';
   if(r.error){toast('Failed to save.','fail');return;}
@@ -1594,6 +1678,114 @@ async function driveCall(payload){
     console.error('Drive call failed:',e);
     return {error:e.message};
   }
+}
+
+// ── JD LIBRARY ────────────────────────────────────────────────────────────────
+function renderJDLibrary(){
+  var html='';
+  if(!ALL_JDS.length){
+    html='<div class="empty">No JD templates yet. Add your first one.</div>';
+    document.getElementById('jd-body').innerHTML=html;
+    return;
+  }
+  ALL_JDS.forEach(function(j){
+    var usedBy=ALL_ROLES.filter(function(r){return r.jd_template_id===j.id;});
+    var roleLabel=j.role_type?(ROLE_DISPLAY[j.role_type]||j.role_type):'All roles';
+    var senLabel=j.seniority_level?j.seniority_level.charAt(0).toUpperCase()+j.seniority_level.slice(1):'All levels';
+    html+='<div class="tpl-card">'+
+      '<div class="tpl-card-hd">'+
+        '<span class="tpl-card-title">'+esc(j.title)+'</span>'+
+        '<div style="display:flex;gap:6px;align-items:center;">'+
+          '<span class="tpl-card-stage">'+esc(roleLabel)+'</span>'+
+          '<span class="tpl-card-stage">'+esc(senLabel)+'</span>'+
+          (usedBy.length?'<span class="tpl-card-stage" style="color:var(--green);">Used in '+usedBy.length+' role'+(usedBy.length>1?'s':'')+'</span>':'')+
+          '<button class="btn bg2x bxs" onclick="openEditJD(''+j.id+'')">Edit</button>'+
+          '<button class="btn bg2x bxs" onclick="downloadJD(''+j.id+'')">Download</button>'+
+        '</div>'+
+      '</div>'+
+      (j.content?'<div class="tpl-card-body" style="margin-top:8px;white-space:pre-wrap;max-height:120px;overflow:hidden;position:relative;">'+
+        esc(j.content.substring(0,300))+(j.content.length>300?'...':'')+'</div>':'')+
+      (usedBy.length?'<div style="margin-top:8px;font-size:11px;color:var(--text3);">Used by: '+usedBy.map(function(r){return esc(r.title);}).join(', ')+'</div>':'')+
+    '</div>';
+  });
+  document.getElementById('jd-body').innerHTML=html;
+}
+
+function populateJDDropdown(roleType, seniority){
+  var el=document.getElementById('r-jd'); if(!el)return;
+  var val=el.value;
+  while(el.options.length>1) el.remove(1);
+  var filtered=ALL_JDS.filter(function(j){
+    if(j.role_type&&roleType&&j.role_type!==roleType)return false;
+    if(j.seniority_level&&seniority&&j.seniority_level!==seniority)return false;
+    return true;
+  });
+  filtered.forEach(function(j){
+    var o=document.createElement('option');o.value=j.id;
+    o.textContent=j.title+(j.role_type||j.seniority_level?' ('+[j.role_type?ROLE_DISPLAY[j.role_type]||j.role_type:'',j.seniority_level||''].filter(Boolean).join(', ')+')':'');
+    el.appendChild(o);
+  });
+  var hint=document.getElementById('r-jd-hint');
+  if(hint) hint.textContent=filtered.length?filtered.length+' JD'+(filtered.length>1?'s':'') +' available for this role/seniority.':'No JDs match this role/seniority yet. You can still assign any JD.';
+  if(val) el.value=val;
+}
+
+function openJDModal(){
+  document.getElementById('m-jd-title').textContent='Add JD';
+  document.getElementById('jd-id').value='';
+  document.getElementById('jd-title').value='';
+  document.getElementById('jd-role-type').value='';
+  document.getElementById('jd-seniority').value='';
+  document.getElementById('jd-content').value='';
+  openM('m-jd');
+}
+
+function openEditJD(id){
+  var j=ALL_JDS.find(function(x){return x.id===id;}); if(!j)return;
+  document.getElementById('m-jd-title').textContent='Edit JD';
+  document.getElementById('jd-id').value=j.id;
+  document.getElementById('jd-title').value=j.title||'';
+  document.getElementById('jd-role-type').value=j.role_type||'';
+  document.getElementById('jd-seniority').value=j.seniority_level||'';
+  document.getElementById('jd-content').value=j.content||'';
+  openM('m-jd');
+}
+
+async function saveJD(){
+  var btn=document.getElementById('btn-save-jd');
+  var title=document.getElementById('jd-title').value.trim();
+  var jdContent=document.getElementById('jd-content').value.trim();
+  if(!title){toast('Title is required.','fail');return;}
+  if(!jdContent){toast('JD content is required.','fail');return;}
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
+  var id=document.getElementById('jd-id').value;
+  var payload={title:title,role_type:document.getElementById('jd-role-type').value||null,seniority_level:document.getElementById('jd-seniority').value||null,content:jdContent};
+  var r=id?await db.from('scout_jd_templates').update(payload).eq('id',id):await db.from('scout_jd_templates').insert(payload);
+  btn.disabled=false; btn.innerHTML='Save JD';
+  if(r.error){toast('Failed to save.','fail');return;}
+  await loadAllData();
+  closeM('m-jd');
+  toast(id?'JD updated.':'JD added.');
+  renderJDLibrary();
+}
+
+function downloadJD(id){
+  var j=ALL_JDS.find(function(x){return x.id===id;}); if(!j)return;
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>'+esc(j.title)+'</title>'+
+    '<style>body{font-family:Georgia,serif;font-size:14px;line-height:1.8;color:#111;max-width:800px;margin:40px auto;padding:0 40px;}h1{font-size:20px;font-weight:700;margin-bottom:4px;}h2{font-size:16px;font-weight:700;margin:24px 0 8px;}p,li{margin-bottom:8px;}ul{padding-left:20px;}.header{border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:28px;}.meta{font-size:12px;color:#666;margin-top:6px;}</style>'+
+    '</head><body>'+
+    '<div class="header"><h1>'+esc(j.title)+'</h1>'+
+    '<div class="meta">'+(j.role_type?'Role: '+(ROLE_DISPLAY[j.role_type]||j.role_type)+' &nbsp;|&nbsp; ':'')+
+    (j.seniority_level?'Level: '+j.seniority_level.charAt(0).toUpperCase()+j.seniority_level.slice(1)+' &nbsp;|&nbsp; ':'')+
+    'Generated: '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})+'</div></div>'+
+    '<div style="white-space:pre-wrap;">'+esc(j.content)+'</div>'+
+    '</body></html>';
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download=j.title.replace(/[^a-z0-9]/gi,'_')+'.html';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);document.body.removeChild(a);},1000);
+  toast('JD downloaded.');
 }
 </script>
 </body>
