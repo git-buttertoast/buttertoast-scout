@@ -69,7 +69,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 .ph{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;}
 .ph-left h1{font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.4px;}
 .ph-left p{font-size:13px;color:var(--text3);margin-top:3px;}
-.ph-actions{display:flex;gap:8px;align-items:center;}
+.ph-actions{flex-shrink:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
 
 /* ── BUTTONS ────────────────────────────────────────────────────────────────── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:inherit;transition:opacity 0.15s;white-space:nowrap;}
@@ -92,7 +92,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 .sc-sub{font-size:11px;color:var(--text2);margin-top:2px;}
 
 /* ── PIPELINE KANBAN ────────────────────────────────────────────────────────── */
-.pipeline-wrap{overflow-x:auto;padding-bottom:16px;}
+.pipeline-wrap{overflow-x:auto;padding-bottom:16px;width:100%;}
 .pipeline-board{display:flex;gap:12px;min-width:max-content;align-items:flex-start;}
 .pipe-col{width:220px;flex-shrink:0;}
 .pipe-col-hd{display:flex;align-items:center;justify-content:space-between;padding:0 2px;margin-bottom:8px;}
@@ -491,6 +491,9 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
           <option value="hr">HR</option>
           <option value="operations">Operations</option>
           <option value="social_media">Social Media</option>
+          <option value="pr">PR</option>
+          <option value="research">Research</option>
+          <option value="legal">Legal</option>
         </select>
       </div>
       <div class="frow"><label class="lbl">Employment type</label>
@@ -503,6 +506,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
     </div>
     <div class="frow"><label class="lbl">Description</label><textarea class="inp" id="r-desc" placeholder="What does this role do?"></textarea></div>
     <div class="frow"><label class="lbl">Requirements</label><textarea class="inp" id="r-req" placeholder="Skills, experience, tools..."></textarea></div>
+    <div class="frow"><label class="lbl">Budget (tentative)</label><input class="inp" id="r-budget" placeholder="e.g. &#8377;4&ndash;6 LPA or &#8377;15,000/month stipend"/></div>
     <div class="frow"><label class="lbl">Status</label>
       <select class="inp" id="r-status">
         <option value="open">Open</option>
@@ -633,6 +637,8 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
             <option value="technology">Technology</option><option value="finance">Finance</option>
             <option value="hr">HR</option><option value="operations">Operations</option>
             <option value="social_media">Social Media</option>
+            <option value="pr">PR</option><option value="research">Research</option>
+            <option value="legal">Legal</option>
           </select>
         </div>
         <div class="frow"><label class="lbl">Employment type</label>
@@ -1143,6 +1149,7 @@ function openRoleModal(){
   document.getElementById('r-desc').value='';
   document.getElementById('r-req').value='';
   document.getElementById('r-status').value='open';
+  document.getElementById('r-budget').value='';
   openM('m-role');
 }
 
@@ -1157,6 +1164,7 @@ function openEditRole(id){
   document.getElementById('r-desc').value=r.description||'';
   document.getElementById('r-req').value=r.requirements||'';
   document.getElementById('r-status').value=r.status||'open';
+  document.getElementById('r-budget').value=r.budget||'';
   openM('m-role');
 }
 
@@ -1166,7 +1174,7 @@ async function saveRole(){
   if(!title){toast('Title is required.','fail');return;}
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
   var id=document.getElementById('r-id').value;
-  var payload={title:title,department:document.getElementById('r-dept').value||null,employment_type:document.getElementById('r-type').value,description:document.getElementById('r-desc').value.trim()||null,requirements:document.getElementById('r-req').value.trim()||null,status:document.getElementById('r-status').value};
+  var payload={title:title,department:document.getElementById('r-dept').value||null,employment_type:document.getElementById('r-type').value,description:document.getElementById('r-desc').value.trim()||null,requirements:document.getElementById('r-req').value.trim()||null,budget:document.getElementById('r-budget').value.trim()||null,status:document.getElementById('r-status').value};
   var r=id?await db.from('scout_roles').update(payload).eq('id',id):await db.from('scout_roles').insert({...payload,created_by:ME.id});
   btn.disabled=false; btn.innerHTML='Save role';
   if(r.error){toast('Failed to save.','fail');return;}
