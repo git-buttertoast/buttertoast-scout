@@ -1029,6 +1029,15 @@ function showPage(page){
   else if(page==='templates')renderTemplates();
 }
 
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  var action = btn.getAttribute('data-action');
+  var jdid = btn.getAttribute('data-jdid');
+  if(action === 'edit-jd' && jdid) openEditJD(jdid);
+  if(action === 'dl-jd' && jdid) downloadJD(jdid);
+});
+
 function setupMobile(){
   var btn=document.getElementById('mob-menu-btn');
   var overlay=document.getElementById('mob-overlay');
@@ -1699,8 +1708,8 @@ function renderJDLibrary(){
           '<span class="tpl-card-stage">'+esc(roleLabel)+'</span>'+
           '<span class="tpl-card-stage">'+esc(senLabel)+'</span>'+
           (usedBy.length?'<span class="tpl-card-stage" style="color:var(--green);">Used in '+usedBy.length+' role'+(usedBy.length>1?'s':'')+'</span>':'')+
-          '<button class="btn bg2x bxs" onclick="openEditJD(''+j.id+'')">Edit</button>'+
-          '<button class="btn bg2x bxs" onclick="downloadJD(''+j.id+'')">Download</button>'+
+          '<button class="btn bg2x bxs" data-jdid="'+j.id+'" data-action="edit-jd">Edit</button>'+
+          '<button class="btn bg2x bxs" data-jdid="'+j.id+'" data-action="dl-jd">Download</button>'+
         '</div>'+
       '</div>'+
       (j.content?'<div class="tpl-card-body" style="margin-top:8px;white-space:pre-wrap;max-height:120px;overflow:hidden;position:relative;">'+
