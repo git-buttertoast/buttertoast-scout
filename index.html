@@ -477,6 +477,49 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
     <input type="hidden" id="r-id"/>
     <div class="frow"><label class="lbl">Job title *</label><input class="inp" id="r-title" placeholder="e.g. Senior Graphic Designer"/></div>
     <div class="fgrid">
+      <div class="frow"><label class="lbl">Role type</label>
+        <select class="inp" id="r-role-type">
+          <option value="">-- Select --</option>
+            <option value="">-- Select role --</option>
+            <option value="graphic_designer">Graphic Designer</option>
+            <option value="motion_designer">Motion Designer</option>
+            <option value="ui_ux_designer">UI/UX Designer</option>
+            <option value="art_director">Art Director</option>
+            <option value="video_editor">Video Editor</option>
+            <option value="content_writer">Content Writer</option>
+            <option value="social_media_manager">Social Media Manager</option>
+            <option value="brand_strategist">Brand Strategist</option>
+            <option value="account_manager">Account Manager</option>
+            <option value="account_executive">Account Executive</option>
+            <option value="business_developer">Business Developer</option>
+            <option value="media_planner">Media Planner</option>
+            <option value="media_buyer">Media Buyer</option>
+            <option value="seo_specialist">SEO Specialist</option>
+            <option value="web_developer">Web Developer</option>
+            <option value="frontend_developer">Frontend Developer</option>
+            <option value="backend_developer">Backend Developer</option>
+            <option value="project_manager">Project Manager</option>
+            <option value="operations_manager">Operations Manager</option>
+            <option value="hr_manager">HR Manager</option>
+            <option value="finance_manager">Finance Manager</option>
+        </select>
+      </div>
+      <div class="frow"><label class="lbl">Seniority level</label>
+        <select class="inp" id="r-seniority">
+          <option value="">-- Select --</option>
+            <option value="">-- Select seniority --</option>
+            <option value="intern">Intern</option>
+            <option value="junior">Junior</option>
+            <option value="mid">Mid-level</option>
+            <option value="senior">Senior</option>
+            <option value="lead">Lead</option>
+            <option value="head">Head</option>
+            <option value="director">Director</option>
+            <option value="founder">Founder</option>
+        </select>
+      </div>
+    </div>
+    <div class="fgrid">
       <div class="frow"><label class="lbl">Department</label>
         <select class="inp" id="r-dept">
           <option value="">-- Select --</option>
@@ -649,7 +692,48 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
           </select>
         </div>
       </div>
-      <div class="frow"><label class="lbl">Designation</label><input class="inp" id="conv-desig" placeholder="e.g. Graphic Designer"/></div>
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Role</label>
+          <select class="inp" id="conv-role" onchange="updateConvDesig()">
+            <option value="">-- Select role --</option>
+            <option value="graphic_designer">Graphic Designer</option>
+            <option value="motion_designer">Motion Designer</option>
+            <option value="ui_ux_designer">UI/UX Designer</option>
+            <option value="art_director">Art Director</option>
+            <option value="video_editor">Video Editor</option>
+            <option value="content_writer">Content Writer</option>
+            <option value="social_media_manager">Social Media Manager</option>
+            <option value="brand_strategist">Brand Strategist</option>
+            <option value="account_manager">Account Manager</option>
+            <option value="account_executive">Account Executive</option>
+            <option value="business_developer">Business Developer</option>
+            <option value="media_planner">Media Planner</option>
+            <option value="media_buyer">Media Buyer</option>
+            <option value="seo_specialist">SEO Specialist</option>
+            <option value="web_developer">Web Developer</option>
+            <option value="frontend_developer">Frontend Developer</option>
+            <option value="backend_developer">Backend Developer</option>
+            <option value="project_manager">Project Manager</option>
+            <option value="operations_manager">Operations Manager</option>
+            <option value="hr_manager">HR Manager</option>
+            <option value="finance_manager">Finance Manager</option>
+          </select>
+        </div>
+        <div class="frow"><label class="lbl">Seniority</label>
+          <select class="inp" id="conv-seniority" onchange="updateConvDesig()">
+            <option value="">-- Select seniority --</option>
+            <option value="intern">Intern</option>
+            <option value="junior">Junior</option>
+            <option value="mid">Mid-level</option>
+            <option value="senior">Senior</option>
+            <option value="lead">Lead</option>
+            <option value="head">Head</option>
+            <option value="director">Director</option>
+            <option value="founder">Founder</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow"><label class="lbl">Designation <span style="color:var(--text3);font-size:10px;">(auto-generated)</span></label><div class="inp" id="conv-desig-display" style="color:var(--text3);cursor:default;">--</div><input type="hidden" id="conv-desig"/></div>
     </div>
     <div class="mf">
       <button class="btn bg2x" onclick="closeM('m-convert')">Cancel</button>
@@ -668,6 +752,45 @@ var DRIVE_URL = 'https://script.google.com/macros/s/AKfycbyVbz5RdpIuwkkyqrvcctti
 var ME = null, MY_ROLE = null;
 var ALL_CANDIDATES = [], ALL_ROLES = [], ALL_ASSIGNMENTS = [], ALL_TEMPLATES = [];
 var ACTIVE_CANDIDATE = null;
+
+var ROLE_DISPLAY = {
+  graphic_designer:'Graphic Designer',motion_designer:'Motion Designer',
+  ui_ux_designer:'UI/UX Designer',art_director:'Art Director',
+  video_editor:'Video Editor',content_writer:'Content Writer',
+  social_media_manager:'Social Media Manager',brand_strategist:'Brand Strategist',
+  account_manager:'Account Manager',account_executive:'Account Executive',
+  business_developer:'Business Developer',media_planner:'Media Planner',
+  media_buyer:'Media Buyer',seo_specialist:'SEO Specialist',
+  web_developer:'Web Developer',frontend_developer:'Frontend Developer',
+  backend_developer:'Backend Developer',project_manager:'Project Manager',
+  operations_manager:'Operations Manager',hr_manager:'HR Manager',
+  finance_manager:'Finance Manager'
+};
+
+function autoDesignation(seniority, role, dept){
+  var rd = ROLE_DISPLAY[role] || (role||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+  var dd = DEPT_DISPLAY[dept] || (dept||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+  if(seniority==='intern')   return (dd?dd+' ':'')+'Intern';
+  if(seniority==='junior')   return 'Junior '+(rd||'');
+  if(seniority==='mid')      return rd||'';
+  if(seniority==='senior')   return 'Senior '+(rd||'');
+  if(seniority==='lead')     return (rd||'Lead')+' Lead';
+  if(seniority==='head')     return 'Head of '+(dd||'');
+  if(seniority==='director') return 'Director of '+(dd||'');
+  if(seniority==='founder')  return 'Founder';
+  return '';
+}
+
+function updateConvDesig(){
+  var role = document.getElementById('conv-role').value;
+  var seniority = document.getElementById('conv-seniority').value;
+  var dept = document.getElementById('conv-dept').value;
+  var desig = autoDesignation(seniority, role, dept);
+  var display = document.getElementById('conv-desig-display');
+  var hidden = document.getElementById('conv-desig');
+  if(display){ display.textContent = desig || '--'; display.style.color = desig ? 'var(--text)' : 'var(--text3)'; }
+  if(hidden) hidden.value = desig || '';
+}
 
 var STAGES = [
   {key:'shortlisted',label:'Shortlisted'},
@@ -1144,6 +1267,8 @@ function openRoleModal(){
   document.getElementById('m-role-title').textContent='Add role';
   document.getElementById('r-id').value='';
   document.getElementById('r-title').value='';
+  document.getElementById('r-role-type').value='';
+  document.getElementById('r-seniority').value='';
   document.getElementById('r-dept').value='';
   document.getElementById('r-type').value='permanent';
   document.getElementById('r-desc').value='';
@@ -1159,6 +1284,8 @@ function openEditRole(id){
   document.getElementById('m-role-title').textContent='Edit role';
   document.getElementById('r-id').value=r.id;
   document.getElementById('r-title').value=r.title||'';
+  document.getElementById('r-role-type').value=r.role_type||'';
+  document.getElementById('r-seniority').value=r.seniority_level||'';
   document.getElementById('r-dept').value=r.department||'';
   document.getElementById('r-type').value=r.employment_type||'permanent';
   document.getElementById('r-desc').value=r.description||'';
@@ -1174,7 +1301,7 @@ async function saveRole(){
   if(!title){toast('Title is required.','fail');return;}
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
   var id=document.getElementById('r-id').value;
-  var payload={title:title,department:document.getElementById('r-dept').value||null,employment_type:document.getElementById('r-type').value,description:document.getElementById('r-desc').value.trim()||null,requirements:document.getElementById('r-req').value.trim()||null,budget:document.getElementById('r-budget').value.trim()||null,status:document.getElementById('r-status').value};
+  var payload={title:title,role_type:document.getElementById('r-role-type').value||null,seniority_level:document.getElementById('r-seniority').value||null,department:document.getElementById('r-dept').value||null,employment_type:document.getElementById('r-type').value,description:document.getElementById('r-desc').value.trim()||null,requirements:document.getElementById('r-req').value.trim()||null,budget:document.getElementById('r-budget').value.trim()||null,status:document.getElementById('r-status').value};
   var r=id?await db.from('scout_roles').update(payload).eq('id',id):await db.from('scout_roles').insert({...payload,created_by:ME.id});
   btn.disabled=false; btn.innerHTML='Save role';
   if(r.error){toast('Failed to save.','fail');return;}
@@ -1375,9 +1502,12 @@ function openConvertModal(candidateId){
   var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
   document.getElementById('conv-cand-id').value=candidateId;
   document.getElementById('conv-joining').value=new Date().toISOString().split('T')[0];
-  document.getElementById('conv-desig').value=role?role.title:'';
+  document.getElementById('conv-role').value='';
+  document.getElementById('conv-seniority').value='';
+  document.getElementById('conv-desig').value='';
   document.getElementById('conv-dept').value=role&&role.department?role.department:'design';
   document.getElementById('conv-type').value=role&&role.employment_type?role.employment_type:'permanent';
+  if(document.getElementById('conv-desig-display')) document.getElementById('conv-desig-display').textContent='--';
   document.getElementById('conv-aadhaar').value='';
   document.getElementById('conv-pan').value='';
   document.getElementById('conv-bank').value='';
