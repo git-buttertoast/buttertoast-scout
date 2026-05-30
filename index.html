@@ -735,7 +735,7 @@ async function loadApp(user){
   }
 
   // Access check: admin or account_manager only
-  if(MY_ROLE !== 'admin' && MY_ROLE !== 'account_manager'){
+  if(MY_ROLE !== 'admin' && MY_ROLE !== 'hr'){
     document.getElementById('app').style.display='none';
     document.getElementById('auth').style.display='flex';
     var eb=document.getElementById('ebox');eb.textContent='You do not have access to Scout.';eb.style.display='block';
