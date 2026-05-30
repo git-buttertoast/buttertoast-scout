@@ -263,6 +263,27 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 .jd-card-body.open{display:block;}
 .jd-expand-icon{font-size:10px;color:var(--text3);transition:transform 0.2s;flex-shrink:0;}
 .jd-expand-icon.open{transform:rotate(180deg);}
+
+.asgn-filters{display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
+.asgn-role-group{margin-bottom:28px;}
+.asgn-role-group-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.asgn-role-group-title{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.6px;}
+.asgn-role-group-count{font-size:11px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:2px 8px;}
+.asgn-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;}
+.asgn-card-hd{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;}
+.asgn-card-hd:hover{background:var(--bg3);}
+.asgn-option-badge{font-size:11px;font-weight:700;color:var(--amber);background:rgba(232,168,56,0.12);border:1px solid rgba(232,168,56,0.25);border-radius:4px;padding:2px 7px;flex-shrink:0;}
+.asgn-card-title{font-size:14px;font-weight:600;color:#fff;flex:1;}
+.asgn-card-meta{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap;}
+.asgn-industry-tag{font-size:11px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:2px 9px;}
+.asgn-duration-tag{font-size:11px;color:var(--green);background:rgba(76,175,125,0.1);border:1px solid rgba(76,175,125,0.2);border-radius:20px;padding:2px 9px;}
+.asgn-card-body{display:none;padding:0 16px 16px;border-top:1px solid var(--border);}
+.asgn-card-body.open{display:block;}
+.asgn-card-desc{font-size:12px;color:var(--text3);margin:12px 0 8px;line-height:1.6;}
+.asgn-instructions-preview{background:var(--bg3);border-radius:6px;padding:12px 14px;font-size:12px;color:var(--text2);white-space:pre-wrap;line-height:1.7;max-height:300px;overflow-y:auto;}
+.asgn-card-actions{display:flex;gap:8px;margin-top:12px;}
+.asgn-expand-icon{font-size:10px;color:var(--text3);transition:transform 0.2s;flex-shrink:0;}
+.asgn-expand-icon.open{transform:rotate(180deg);}
 </style>
 </head>
 <body>
@@ -487,6 +508,13 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
           <button class="btn bp" onclick="openAssignmentModal()">+ Add assignment</button>
         </div>
       </div>
+      <div class="asgn-filters">
+        <select class="inp bxs" id="af-role" onchange="renderAssignments()" style="min-width:180px;">
+          <option value="">All roles</option>
+        </select>
+        <button class="btn bg2x bxs" id="af-clear" onclick="clearAsgnFilter()" style="display:none;">Clear filter</button>
+        <span id="af-count" style="font-size:12px;color:var(--text3);"></span>
+      </div>
       <div id="assignments-body"></div>
     </div>
 
@@ -634,16 +662,42 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 
 <!-- ADD/EDIT ASSIGNMENT MODAL -->
 <div class="mbg mbg-c" id="m-assignment">
-  <div class="modal">
+  <div class="modal" style="max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;">
     <h2 id="m-asgn-title">Add assignment</h2>
     <p class="msub">Create a task to send to candidates.</p>
     <input type="hidden" id="asgn-id"/>
     <div class="frow"><label class="lbl">Title *</label><input class="inp" id="asgn-title" placeholder="e.g. Design a social media post"/></div>
-    <div class="frow"><label class="lbl">Role (leave blank for generic)</label><select class="inp" id="asgn-role"><option value="">-- Generic / all roles --</option></select></div>
-    <div class="frow"><label class="lbl">Description</label><textarea class="inp" id="asgn-desc" placeholder="Brief description of the assignment..."></textarea></div>
-    <div class="frow"><label class="lbl">Instructions (sent to candidate)</label><textarea class="inp" id="asgn-instructions" placeholder="Step-by-step instructions..."></textarea></div>
-    <div class="frow"><label class="lbl">Duration (days)</label><input class="inp" id="asgn-days" type="number" placeholder="e.g. 3"/></div>
-    <div class="mf">
+    <div class="frow"><label class="lbl">Role (leave blank for generic)</label>
+      <select class="inp" id="asgn-role">
+        <option value="">-- Generic / all roles --</option>
+        <option value="">-- Select role --</option>
+        <option value="graphic_designer">Graphic Designer</option>
+        <option value="motion_designer">Motion Designer</option>
+        <option value="ui_ux_designer">UI/UX Designer</option>
+        <option value="art_director">Art Director</option>
+        <option value="video_editor">Video Editor</option>
+        <option value="cinematographer">Cinematographer</option>
+        <option value="content_writer">Content Writer</option>
+        <option value="copywriter">Copywriter</option>
+        <option value="brand_strategist">Brand Strategist</option>
+        <option value="account_manager">Account Manager</option>
+        <option value="business_developer">Business Developer</option>
+        <option value="media_planner">Media Planner</option>
+        <option value="media_buyer">Media Buyer</option>
+        <option value="seo_specialist">SEO Specialist</option>
+        <option value="frontend_developer">Frontend Developer</option>
+        <option value="backend_developer">Backend Developer</option>
+        <option value="consultant">Consultant</option>
+        <option value="project_manager">Project Manager</option>
+        <option value="operations_manager">Operations Manager</option>
+        <option value="hr_manager">HR Manager</option>
+        <option value="finance_manager">Finance Manager</option>
+      </select>
+    </div>
+    <div class="frow"><label class="lbl">Short description</label><textarea class="inp" id="asgn-desc" placeholder="One-two lines summarising what this assignment tests..." style="min-height:60px;"></textarea></div>
+    <div class="frow"><label class="lbl">Full instructions (sent to candidate)</label><textarea class="inp" id="asgn-instructions" placeholder="Full brief with context, tasks, deliverables, and deadline..." style="min-height:180px;"></textarea></div>
+    <div class="frow"><label class="lbl">Duration (days)</label><input class="inp" id="asgn-days" type="number" placeholder="e.g. 2"/></div>
+    <div class="mf" style="position:sticky;bottom:0;background:var(--bg2);padding:12px 0 0;border-top:1px solid var(--border);">
       <button class="btn bg2x" onclick="closeM('m-assignment')">Cancel</button>
       <button class="btn bp" id="btn-save-asgn" onclick="saveAssignment()">Save assignment</button>
     </div>
@@ -1232,23 +1286,148 @@ function renderRoles(){
 }
 
 // ── ASSIGNMENTS ───────────────────────────────────────────────────────────────
-function renderAssignments(){
-  var html='';
-  if(!ALL_ASSIGNMENTS.length){html='<div class="empty">No assignments yet.</div>';}
+function clearAsgnFilter(){
+  var el=document.getElementById('af-role'); if(el) el.value='';
+  renderAssignments();
+}
+
+function toggleAsgnCard(id){
+  var body=document.getElementById('asgnb-'+id);
+  var icon=document.getElementById('asgni-'+id);
+  if(!body) return;
+  body.classList.toggle('open',!body.classList.contains('open'));
+  if(icon) icon.classList.toggle('open',!icon.classList.contains('open'));
+}
+
+function getAsgnOptionLabel(title){
+  // Extract option letter from title e.g. "Assignment B --" -> "B"
+  var m=title.match(/Assignment ([A-Z]) --/);
+  return m?m[1]:null;
+}
+
+function getAsgnIndustry(title){
+  // Extract industry from title e.g. "-- Ceramic Tile Brand" -> "Ceramic Tile Brand"
+  var m=title.match(/-- (.+)$/);
+  return m?m[1]:null;
+}
+
+function populateAsgnRoleFilter(){
+  var el=document.getElementById('af-role'); if(!el) return;
+  var current=el.value;
+  while(el.options.length>1) el.remove(1);
+  // Get unique role names from assignments
+  var seen={};
   ALL_ASSIGNMENTS.forEach(function(a){
-    html+='<div class="tpl-card">'+
-      '<div class="tpl-card-hd">'+
-        '<span class="tpl-card-title">'+esc(a.title)+'</span>'+
-        '<div style="display:flex;gap:6px;align-items:center;">'+
-          (a.role_id?'<span class="tpl-card-stage">'+esc(rName(a.role_id))+'</span>':'<span class="tpl-card-stage">Generic</span>')+
-          (a.duration_days?'<span class="tpl-card-stage">'+a.duration_days+'d</span>':'')+
-          '<button class="btn bg2x bxs" onclick="openEditAssignment(\''+a.id+'\')">Edit</button>'+
-        '</div>'+
-      '</div>'+
-      (a.description?'<div class="tpl-card-body">'+esc(a.description)+'</div>':'')+
-      '</div>';
+    var name=a.role_id?rName(a.role_id):'Generic';
+    if(!seen[name]){
+      seen[name]=true;
+      var o=document.createElement('option');
+      o.value=a.role_id||'__generic__';
+      o.textContent=name;
+      el.appendChild(o);
+    }
   });
-  document.getElementById('assignments-body').innerHTML=html;
+  if(current) el.value=current;
+}
+
+function renderAssignments(){
+  populateAsgnRoleFilter();
+  var roleF=(document.getElementById('af-role')||{value:''}).value;
+  var clearBtn=document.getElementById('af-clear');
+  var countEl=document.getElementById('af-count');
+  if(clearBtn) clearBtn.style.display=roleF?'':'none';
+
+  var filtered=ALL_ASSIGNMENTS.filter(function(a){
+    if(!roleF) return true;
+    if(roleF==='__generic__') return !a.role_id;
+    return a.role_id===roleF;
+  });
+
+  if(countEl) countEl.textContent=filtered.length+' of '+ALL_ASSIGNMENTS.length+' assignments';
+
+  var container=document.getElementById('assignments-body');
+  container.innerHTML='';
+
+  if(!filtered.length){
+    container.innerHTML='<div class="empty">No assignments match the selected filter.</div>';
+    return;
+  }
+
+  // Group by role
+  var groups={};
+  var groupOrder=[];
+  filtered.forEach(function(a){
+    var key=a.role_id||'__generic__';
+    var label=a.role_id?rName(a.role_id):'Generic';
+    if(!groups[key]){groups[key]={label:label,items:[]};groupOrder.push(key);}
+    groups[key].items.push(a);
+  });
+
+  var frag=document.createDocumentFragment();
+  groupOrder.forEach(function(key){
+    var grp=groups[key];
+    var groupDiv=document.createElement('div');
+    groupDiv.className='asgn-role-group';
+
+    // Group header
+    var hd=document.createElement('div');
+    hd.className='asgn-role-group-hd';
+    hd.innerHTML='<span class="asgn-role-group-title">'+esc(grp.label)+'</span>'+
+      '<span class="asgn-role-group-count">'+grp.items.length+' option'+(grp.items.length>1?'s':'')+'</span>';
+    groupDiv.appendChild(hd);
+
+    // Cards
+    grp.items.forEach(function(a){
+      var optLetter=getAsgnOptionLabel(a.title);
+      var industry=getAsgnIndustry(a.title);
+      var card=document.createElement('div');
+      card.className='asgn-card';
+
+      var hdEl=document.createElement('div');
+      hdEl.className='asgn-card-hd';
+      hdEl.addEventListener('click',function(){toggleAsgnCard(a.id);});
+
+      // Clean title -- remove "Assignment X --" prefix for display
+      var displayTitle=a.title.replace(/Assignment [A-Z]? ?-- /,'').replace(/^Assignment -- /,'');
+
+      hdEl.innerHTML=
+        (optLetter?'<span class="asgn-option-badge">Option '+optLetter+'</span>':'')+
+        '<span class="asgn-card-title">'+esc(displayTitle)+'</span>'+
+        '<div class="asgn-card-meta">'+
+          (a.duration_days?'<span class="asgn-duration-tag">'+a.duration_days*24+' hr window</span>':'')+
+          '<button class="btn bg2x bxs" onclick="event.stopPropagation();openEditAssignment(\''+a.id+'\')" >Edit</button>'+
+        '</div>'+
+        '<span class="asgn-expand-icon" id="asgni-'+a.id+'">&#9660;</span>';
+
+      var bodyEl=document.createElement('div');
+      bodyEl.className='asgn-card-body';
+      bodyEl.id='asgnb-'+a.id;
+
+      if(a.description){
+        var desc=document.createElement('div');
+        desc.className='asgn-card-desc';
+        desc.textContent=a.description;
+        bodyEl.appendChild(desc);
+      }
+      if(a.instructions){
+        var pre=document.createElement('div');
+        pre.className='asgn-instructions-preview';
+        pre.textContent=a.instructions;
+        bodyEl.appendChild(pre);
+      }
+      var actions=document.createElement('div');
+      actions.className='asgn-card-actions';
+      actions.innerHTML='<button class="btn bg2x bsm" onclick="openEditAssignment(\''+a.id+'\')" >Edit assignment</button>';
+      bodyEl.appendChild(actions);
+
+      card.appendChild(hdEl);
+      card.appendChild(bodyEl);
+      groupDiv.appendChild(card);
+    });
+
+    frag.appendChild(groupDiv);
+  });
+  container.appendChild(frag);
 }
 
 // ── TEMPLATES ─────────────────────────────────────────────────────────────────
