@@ -932,6 +932,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 
 <script>
 var db = supabase.createClient('https://ferlauhakdbfpwfapxxw.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlcmxhdWhha2RiZnB3ZmFweHh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDc2MjgsImV4cCI6MjA5NTEyMzYyOH0.v7YS2YyOjftzcrDrIzeBAW-H1Xk2DB4iHQO67YF7xwQ');
+var ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlcmxhdWhha2RiZnB3ZmFweHh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDc2MjgsImV4cCI6MjA5NTEyMzYyOH0.v7YS2YyOjftzcrDrIzeBAW-H1Xk2DB4iHQO67YF7xwQ';
 
 var DRIVE_URL = 'https://script.google.com/macros/s/AKfycbyVbz5RdpIuwkkyqrvccttilVhxKB71BXWblIC7jrLa4k8G6pqJLMSVWzdE11iq17yvaA/exec';
 
@@ -1977,7 +1978,16 @@ async function doConvert(){
   var empId=document.getElementById('conv-emp-id').value.trim();
   var joining=document.getElementById('conv-joining').value;
   var desig=document.getElementById('conv-desig').value.trim();
-  if(!empId||!joining||!desig){toast('Employee ID, joining date and designation are required.','fail');return;}
+  var role=document.getElementById('conv-role').value;
+  var seniority=document.getElementById('conv-seniority').value;
+  var dept=document.getElementById('conv-dept').value;
+  var empType=document.getElementById('conv-type').value;
+
+  if(!empId||!joining||!desig||!role||!seniority){
+    toast('Employee ID, joining date, role, seniority and designation are required.','fail');
+    return;
+  }
+  if(!c.email){toast('Candidate must have an email address to create an employee account.','fail');return;}
 
   btn.disabled=true; spin.style.display='inline-block';
 
@@ -1988,49 +1998,64 @@ async function doConvert(){
     if(dr&&!dr.error)driveFolderData=dr;
   }catch(e){}
 
-  // 2. Create Supabase auth user (invite)
-  // Note: creating users requires admin API - store for manual creation
-  // Instead, save all details to a staging table or directly to employee_profiles
-  // For now: create profiles + employee_profiles row with all data
+  // 2. Call Edge Function to create auth user + all Roster records
+  try{
+    var payload={
+      candidateId: candId,
+      fullName: c.full_name,
+      email: c.email,
+      employeeId: empId,
+      joiningDate: joining,
+      role: role,
+      seniority: seniority,
+      designation: desig,
+      department: dept,
+      employmentType: empType,
+      aadhaarNumber: document.getElementById('conv-aadhaar').value.trim()||null,
+      panNumber: document.getElementById('conv-pan').value.trim()||null,
+      bankName: document.getElementById('conv-bank').value.trim()||null,
+      accountNumber: document.getElementById('conv-acc').value.trim()||null,
+      ifscCode: document.getElementById('conv-ifsc').value.trim()||null,
+      driveFolderId: driveFolderData?driveFolderData.folderId:null,
+      driveFolderLink: driveFolderData?driveFolderData.folderLink:null,
+      companyDocsFolderId: driveFolderData?driveFolderData.companyDocsFolderId:null,
+      signedCopiesFolderId: driveFolderData?driveFolderData.signedCopiesFolderId:null,
+      reportsTo: '13ec9b24-a840-43ff-8a65-57a47b2d0d49'
+    };
 
-  // We'll store the pending employee data in scout_candidates as metadata
-  // and flag it for Roster admin to finalize the auth user creation
-  var convData={
-    aadhaar: document.getElementById('conv-aadhaar').value.trim()||null,
-    pan: document.getElementById('conv-pan').value.trim()||null,
-    bank_name: document.getElementById('conv-bank').value.trim()||null,
-    account_number: document.getElementById('conv-acc').value.trim()||null,
-    ifsc: document.getElementById('conv-ifsc').value.trim()||null,
-    employee_id: empId,
-    joining_date: joining,
-    designation: desig,
-    department: document.getElementById('conv-dept').value,
-    employment_type: document.getElementById('conv-type').value,
-    drive_folder_id: driveFolderData?driveFolderData.folderId:null,
-    drive_folder_link: driveFolderData?driveFolderData.folderLink:null,
-    company_docs_folder_id: driveFolderData?driveFolderData.companyDocsFolderId:null,
-    signed_copies_folder_id: driveFolderData?driveFolderData.signedCopiesFolderId:null
-  };
+    var res=await fetch('https://ferlauhakdbfpwfapxxw.supabase.co/functions/v1/convert-to-employee',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+ANON_KEY
+      },
+      body:JSON.stringify(payload)
+    });
+    var result=await res.json();
 
-  // Save conversion record
-  await db.from('scout_candidates').update({
-    stage:'hired',
-    notes:(c.notes||'')+'\n[CONVERTED TO EMPLOYEE: '+new Date().toISOString()+']'
-  }).eq('id',candId);
+    if(result.error){
+      toast('Error: '+result.error,'fail');
+      btn.disabled=false; spin.style.display='none';
+      return;
+    }
 
-  // Store employee details in scout_offers (reuse) or dedicated field
-  // Save to a JSON notes field for Roster admin to pick up
-  await db.from('scout_candidates').update({
-    notes:(c.notes||'')+'[EMPLOYEE_DATA:'+JSON.stringify(convData)+']'
-  }).eq('id',candId);
+    // Update local state
+    var cnd=ALL_CANDIDATES.find(function(x){return x.id===candId;});
+    if(cnd)cnd.stage='hired';
 
-  var cnd=ALL_CANDIDATES.find(function(x){return x.id===candId;});
-  if(cnd)cnd.stage='hired';
+    btn.disabled=false; spin.style.display='none';
+    closeM('m-convert');
 
-  btn.disabled=false; spin.style.display='none';
-  closeM('m-convert');
-  toast('Candidate marked as hired. Employee folder created in Drive. Roster admin to complete user setup.');
-  renderDashboard();
+    // Show success with temp password -- admin needs to share this with the new employee
+    var msg='Employee account created in Roster.\n\nTemp password: '+result.tempPassword+'\n\nShare this with '+c.full_name+' -- they can change it after first login.';
+    alert(msg);
+    toast(c.full_name+' is now an employee in Roster.');
+    renderDashboard();
+
+  }catch(err){
+    toast('Conversion failed: '+String(err),'fail');
+    btn.disabled=false; spin.style.display='none';
+  }
 }
 
 // ── DRIVE HELPER ──────────────────────────────────────────────────────────────
