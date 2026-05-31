@@ -253,9 +253,9 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
   .role-card{flex-direction:column;align-items:flex-start;gap:10px;}
   .role-card-right{width:100%;justify-content:flex-start;}
   .col-mob-hide{display:none;}
+  .mbg{left:0!important;}
 }
 @media(min-width:769px){
-  .mbg{left:0;}
   .mob-topbar,.mob-overlay{display:none!important;}
 }
 
@@ -1053,7 +1053,8 @@ document.getElementById('bso').addEventListener('click', async function(){
 // ── LOAD APP ──────────────────────────────────────────────────────────────────
 async function loadApp(user){
   document.getElementById('auth').style.display='none';
-  document.getElementById('app').style.display='flex';
+  var appEl=document.getElementById('app');appEl.style.display=window.innerWidth<=768?'block':'flex';
+  window.addEventListener('resize',function(){if(appEl.style.display!=='none')appEl.style.display=window.innerWidth<=768?'block':'flex';});
 
   var [pRes,urRes] = await Promise.all([
     db.from('profiles').select('full_name').eq('id',user.id).single(),
