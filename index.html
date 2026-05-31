@@ -1998,6 +1998,18 @@ async function doConvert(){
     if(dr&&!dr.error)driveFolderData=dr;
   }catch(e){}
 
+  // 1b. Copy candidate files to employee folder + rename candidate folder to [HIRED]
+  if(driveFolderData&&c.drive_folder_id){
+    try{
+      await driveCall({
+        action:'convert_candidate',
+        candidateFolderId:c.drive_folder_id,
+        employeeId:empId,
+        name:c.full_name
+      });
+    }catch(e){}
+  }
+
   // 2. Call Edge Function to create auth user + all Roster records
   try{
     var payload={
