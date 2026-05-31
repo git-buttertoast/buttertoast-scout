@@ -1527,6 +1527,8 @@ function openCandidate(id){
   html+='<div class="dsec"><div class="dsec-hd">Actions</div>';
   html+='<div class="dactions">';
   html+='<button class="btn bg2x bsm" onclick="openEditCandidate(\''+id+'\')">Edit details</button>';
+  html+='<button class="btn bg2x bsm" onclick="addToContacts(\''+id+'\')">Save contact</button>';
+  html+='<button class="btn bg2x bsm" onclick="addToContacts(\''+id+'\')">Save contact</button>';
   if(c.stage==='offer'||c.stage==='offer_sent'||c.stage==='confirmed'){
     html+='<button class="btn bgreen bsm" onclick="openOfferModal(\''+id+'\')">Generate offer letter</button>';
   }
@@ -1594,6 +1596,39 @@ function openEditCandidate(id){
   closeM('m-candidate');
   openM('m-add-candidate');
 }
+
+function addToContacts(id){
+  var c=ALL_CANDIDATES.find(function(x){return x.id===id;});
+  if(!c)return;
+  var nameParts=c.full_name.trim().split(' ');
+  var firstName=nameParts[0]||'';
+  var lastName=nameParts.slice(1).join(' ')||'';
+  var roleName=rName(c.role_id)||'';
+  var lines=[
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    'N:'+lastName+';'+firstName+';;;',
+    'FN:'+c.full_name,
+    'ORG:Candidate - '+roleName,
+    'TITLE:'+roleName
+  ];
+  if(c.phone){lines.push('TEL;TYPE=CELL:'+c.phone);}
+  if(c.email){lines.push('EMAIL:'+c.email);}
+  if(c.linkedin_url){lines.push('URL:'+c.linkedin_url);}
+  lines.push('NOTE:Source: '+(c.source||'')+(c.notes?'\nNotes: '+c.notes.replace(/\n/g,'\\n'):''));
+  lines.push('END:VCARD');
+  var vcf=lines.join('\r\n');
+  var blob=new Blob([vcf],{type:'text/vcard'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download=(c.full_name.replace(/\s+/g,'_')||'contact')+'.vcf';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+}
+
 
 async function saveCandidate(){
   var btn=document.getElementById('btn-save-candidate');
