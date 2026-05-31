@@ -1528,7 +1528,6 @@ function openCandidate(id){
   html+='<div class="dactions">';
   html+='<button class="btn bg2x bsm" onclick="openEditCandidate(\''+id+'\')">Edit details</button>';
   html+='<button class="btn bg2x bsm" onclick="addToContacts(\''+id+'\')">Save contact</button>';
-  html+='<button class="btn bg2x bsm" onclick="addToContacts(\''+id+'\')">Save contact</button>';
   if(c.stage==='offer'||c.stage==='offer_sent'||c.stage==='confirmed'){
     html+='<button class="btn bgreen bsm" onclick="openOfferModal(\''+id+'\')">Generate offer letter</button>';
   }
@@ -1609,7 +1608,7 @@ function addToContacts(id){
     'VERSION:3.0',
     'N:'+lastName+';'+firstName+';;;',
     'FN:'+c.full_name,
-    'ORG:Candidate - '+roleName,
+    'ORG:Buttertoast',
     'TITLE:'+roleName
   ];
   if(c.phone){lines.push('TEL;TYPE=CELL:'+c.phone);}
