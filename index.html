@@ -228,10 +228,11 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 
 /* ── MOBILE ─────────────────────────────────────────────────────────────────── */
 @media(max-width:768px){
+  #app{display:block;}
   aside{transform:translateX(-100%);transition:transform 0.25s;}
   aside.open{transform:translateX(0);}
-  .main{margin-left:0;}
-  .page{padding:16px 16px 80px;}
+  .main{margin-left:0;width:100%;overflow-x:hidden;}
+  .page{padding:16px 16px 80px;width:100%;box-sizing:border-box;}
   .mob-topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:30;}
   .mob-topbar-left{display:flex;align-items:center;gap:10px;}
   .mob-title{font-size:14px;font-weight:600;}
@@ -246,7 +247,12 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
   .mbg-c{align-items:flex-end;padding:0;}
   .dgrid,.fgrid{grid-template-columns:1fr;}
   .stats-grid{grid-template-columns:repeat(2,1fr);}
-  .tbl-wrap{overflow-x:auto;}
+  .tbl-wrap{overflow-x:auto;max-width:100%;}
+  .ph{flex-direction:column;gap:8px;}
+  .ph-actions{width:100%;}
+  .role-card{flex-direction:column;align-items:flex-start;gap:10px;}
+  .role-card-right{width:100%;justify-content:flex-start;}
+  .col-mob-hide{display:none;}
 }
 @media(min-width:769px){
   .mbg{left:0;}
@@ -1188,13 +1194,13 @@ function renderDashboard(){
   var html='<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:10px;">Recent</div>';
   if(!recent.length){html+='<div class="empty">No candidates yet. Add your first one.</div>';}
   else{
-    html+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Stage</th><th>Added</th></tr></thead><tbody>';
+    html+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Stage</th><th class="col-mob-hide">Added</th></tr></thead><tbody>';
     recent.forEach(function(c){
       html+='<tr style="cursor:pointer" onclick="openCandidate(\''+c.id+'\')">'+
         '<td class="tdn">'+esc(c.full_name)+'</td>'+
         '<td>'+esc(rName(c.role_id))+'</td>'+
         '<td>'+stageBadge(c.stage)+'</td>'+
-        '<td>'+fmtAgo(c.created_at)+'</td>'+
+        '<td class="col-mob-hide">'+fmtAgo(c.created_at)+'</td>'+
         '</tr>';
     });
     html+='</tbody></table></div>';
