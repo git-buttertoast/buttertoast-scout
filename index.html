@@ -1061,6 +1061,16 @@ document.getElementById('bso').addEventListener('click', async function(){
 });
 
 // ── LOAD APP ──────────────────────────────────────────────────────────────────
+
+function deptToRole(dept,empType){
+  if(empType==='intern')return 'viewer';
+  var map={design:'designer',video:'editor',content:'copywriter',social_media:'copywriter',
+    account_management:'account_manager',strategy:'account_manager',paid_media:'media_planner',
+    seo:'media_planner',web_development:'account_manager',technology:'account_manager',
+    consulting:'account_manager',business_development:'admin',hr:'hr',finance:'finance',
+    operations:'account_manager'};
+  return map[dept]||'viewer';
+}
 async function loadApp(user){
   document.getElementById('auth').style.display='none';
   var appEl=document.getElementById('app');appEl.style.display=window.innerWidth<=768?'block':'flex';
@@ -1074,13 +1084,17 @@ async function loadApp(user){
   var name = (pRes.data&&pRes.data.full_name)?pRes.data.full_name:user.email.split('@')[0];
   ME = {id:user.id, name:name, email:user.email};
 
+  var epRes3 = await db.from('employee_profiles').select('department,employee_type').eq('id',user.id).maybeSingle();
+  var epDept3 = epRes3.data?epRes3.data.department:null;
+  var epType3 = epRes3.data?epRes3.data.employee_type:'permanent';
   if(urRes.data&&urRes.data.length){
     var ids = urRes.data.map(function(r){return r.role_id;});
     var rRes = await db.from('roles').select('name').in('id',ids);
     MY_ROLE = (rRes.data&&rRes.data.length)?rRes.data[0].name:null;
   }
+  if(!MY_ROLE&&epDept3)MY_ROLE=deptToRole(epDept3,epType3);
 
-  // Access check: admin or account_manager only
+  // Access check: admin, hr, technology, or business_development only
   if(MY_ROLE !== 'admin' && MY_ROLE !== 'hr'){
     document.getElementById('app').style.display='none';
     document.getElementById('auth').style.display='flex';
