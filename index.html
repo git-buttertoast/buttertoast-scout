@@ -352,6 +352,10 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         <svg class="ni" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 13c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Candidates
       </button>
+      <button class="nb" data-page="directory">
+        <svg class="ni" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 5h6M5 8h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Directory
+      </button>
       <button class="nb" data-page="roles">
         <svg class="ni" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1" stroke="currentColor" stroke-width="1.5"/></svg>
         Roles
@@ -416,7 +420,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
     <!-- CANDIDATES -->
     <div class="page" id="page-candidates">
       <div class="ph">
-        <div class="ph-left"><h1>Candidates</h1><p>All candidates across all roles</p></div>
+        <div class="ph-left"><h1>Candidates</h1><p>Active candidates across all roles</p></div>
         <div class="ph-actions">
           <button class="btn bp" onclick="openAddCandidate()">+ Add candidate</button>
         </div>
@@ -434,8 +438,6 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
           <option value="offer_sent">Offer Sent</option>
           <option value="confirmed">Confirmed</option>
           <option value="hired">Hired</option>
-          <option value="rejected">Rejected</option>
-          <option value="withdrew">Withdrew</option>
         </select>
         <select class="fsel" id="cand-role-filter" onchange="renderCandidates()"><option value="">All roles</option></select>
       </div>
@@ -533,6 +535,28 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         <span id="af-count" style="font-size:12px;color:var(--text3);"></span>
       </div>
       <div id="assignments-body"></div>
+    </div>
+
+    <!-- DIRECTORY -->
+    <div class="page" id="page-directory">
+      <div class="ph">
+        <div class="ph-left"><h1>Directory</h1><p>All rejected and withdrawn candidates</p></div>
+      </div>
+      <div class="filters-row">
+        <input class="search-inp" id="dir-search" placeholder="Search name..." oninput="renderDirectory()"/>
+        <select class="fsel" id="dir-stage-filter" onchange="renderDirectory()">
+          <option value="">All</option>
+          <option value="rejected">Rejected</option>
+          <option value="withdrew">Withdrew</option>
+        </select>
+        <select class="fsel" id="dir-role-filter" onchange="renderDirectory()">
+          <option value="">All roles</option>
+        </select>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Reason</th><th>Date</th><th></th></tr></thead>
+        <tbody id="dir-tbody"></tbody>
+      </table></div>
     </div>
 
     <!-- TEMPLATES -->
@@ -930,6 +954,18 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
   </div>
 </div>
 
+  <!-- REASON MODAL -->
+  <div class="mbg" id="m-reason" style="display:none" onclick="if(event.target===this)closeM('m-reason')">
+    <div class="modal" style="max-width:420px">
+      <div class="mhead"><span class="mtitle" id="reason-modal-title">Reason</span><button class="mclose" onclick="closeM('m-reason')">&#x2715;</button></div>
+      <div class="mbody" id="reason-modal-body"></div>
+      <div class="mfoot">
+        <button class="btn bg2x" onclick="closeM('m-reason')">Cancel</button>
+        <button class="btn bp" id="btn-confirm-reason">Confirm</button>
+      </div>
+    </div>
+  </div>
+
 <div id="toast"></div>
 
 <script>
@@ -1178,6 +1214,7 @@ function showPage(page){
   if(page==='dashboard')renderDashboard();
   else if(page==='pipeline')renderPipeline();
   else if(page==='candidates')renderCandidates();
+  else if(page==='directory')renderDirectory();
   else if(page==='roles')renderRoles();
   else if(page==='jd-library')renderJDLibrary();
   else if(page==='assignments')renderAssignments();
@@ -1272,6 +1309,7 @@ function renderCandidates(){
   var sf=document.getElementById('cand-stage-filter').value;
   var rf=document.getElementById('cand-role-filter').value;
   var filtered=ALL_CANDIDATES.filter(function(c){
+    if(c.stage==='rejected'||c.stage==='withdrew')return false;
     if(q&&!(c.full_name||'').toLowerCase().includes(q)&&!(c.email||'').toLowerCase().includes(q))return false;
     if(sf&&c.stage!==sf)return false;
     if(rf&&c.role_id!==rf)return false;
@@ -1566,17 +1604,98 @@ function openCandidate(id){
   openM('m-candidate');
 }
 
-async function moveStage(candidateId, stage){
-  var r=await db.from('scout_candidates').update({stage:stage}).eq('id',candidateId);
+async function moveStage(candidateId,stage){
+  if(stage==='rejected'||stage==='withdrew'){openReasonModal(candidateId,stage);return;}
+  confirmMoveStage(candidateId,stage,null);
+}
+
+var PENDING_REASON={id:null,stage:null};
+function openReasonModal(id,stage){
+  PENDING_REASON={id:id,stage:stage};
+  var c=ALL_CANDIDATES.find(function(x){return x.id===id;});
+  var isRej=stage==='rejected';
+  var reasons=isRej
+    ?['Not the right fit','Weak portfolio / work samples','Failed assignment','Salary expectations too high','Over/underqualified','Poor communication','Better candidate selected','Role closed','Other']
+    :['Accepted another offer','Salary expectations not met','Role not the right fit','Personal reasons','No response / ghosted','Location / remote preference','Other'];
+  document.getElementById('reason-modal-title').textContent=isRej?'Mark as Rejected':'Candidate Withdrew';
+  var opts=reasons.map(function(r){return '<option value="'+esc(r)+'">'+esc(r)+'</option>';}).join('');
+  document.getElementById('reason-modal-body').innerHTML=
+    '<p style="font-size:13px;color:var(--text2);margin-bottom:16px;">'+(c?esc(c.full_name):'')+'</p>'+
+    '<div class="field" style="margin-bottom:0"><label>Reason</label>'+
+    '<select id="reason-select" style="width:100%"><option value="">Select a reason...</option>'+opts+'</select></div>';
+  document.getElementById('btn-confirm-reason').onclick=function(){
+    var reason=document.getElementById('reason-select').value;
+    if(!reason){toast('Please select a reason','fail');return;}
+    confirmMoveStage(PENDING_REASON.id,PENDING_REASON.stage,reason);
+  };
+  openM('m-reason');
+}
+
+async function confirmMoveStage(candidateId,stage,reason){
+  var now=new Date().toISOString();
+  var updates={stage:stage};
+  if(reason)updates.rejection_reason=reason;
+  if(stage==='rejected'||stage==='withdrew')updates.closed_at=now;
+  var r=await db.from('scout_candidates').update(updates).eq('id',candidateId);
   if(r.error){toast('Failed to update stage.','fail');return;}
   var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
-  if(c){c.stage=stage;}
+  if(c){c.stage=stage;if(reason)c.rejection_reason=reason;if(updates.closed_at)c.closed_at=now;}
   toast('Stage updated to '+stageLabel(stage));
+  closeM('m-reason');
   openCandidate(candidateId);
   renderDashboard();
-  var activePage=document.querySelector('.page.show');
-  if(activePage&&activePage.id==='page-pipeline')renderPipeline();
-  if(activePage&&activePage.id==='page-candidates')renderCandidates();
+  var ap=document.querySelector('.page.show');
+  if(ap&&ap.id==='page-pipeline')renderPipeline();
+  if(ap&&ap.id==='page-candidates')renderCandidates();
+  if(ap&&ap.id==='page-directory')renderDirectory();
+}
+
+function renderDirectory(){
+  var q=(document.getElementById('dir-search').value||'').toLowerCase();
+  var sf=document.getElementById('dir-stage-filter').value;
+  var rf=document.getElementById('dir-role-filter').value;
+  var dir=ALL_CANDIDATES.filter(function(c){return c.stage==='rejected'||c.stage==='withdrew';});
+  var filtered=dir.filter(function(c){
+    if(sf&&c.stage!==sf)return false;
+    if(rf&&c.role_id!==rf)return false;
+    if(q&&!(c.full_name||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  var rf_el=document.getElementById('dir-role-filter');
+  var cur=rf_el.value;
+  var rs={};
+  dir.forEach(function(c){if(c.role_id)rs[c.role_id]=rName(c.role_id);});
+  rf_el.innerHTML='<option value="">All roles</option>';
+  Object.keys(rs).forEach(function(rid){
+    rf_el.innerHTML+='<option value="'+rid+'"'+(cur===rid?' selected':'')+'>'+esc(rs[rid])+'</option>';
+  });
+  var tbody=document.getElementById('dir-tbody');
+  if(!filtered.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No candidates in directory yet.</td></tr>';return;}
+  var html='';
+  filtered.forEach(function(c){
+    var dateStr=c.closed_at
+      ?new Date(c.closed_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})
+      :fmtAgo(c.created_at);
+    html+='<tr>'+
+      '<td class="tdn">'+esc(c.full_name)+'</td>'+
+      '<td>'+esc(rName(c.role_id))+'</td>'+
+      '<td>'+stageBadge(c.stage)+'</td>'+
+      '<td style="font-size:13px;color:var(--text2)">'+esc(c.rejection_reason||'--')+'</td>'+
+      '<td style="font-size:12px;color:var(--text3)">'+dateStr+'</td>'+
+      '<td><button class="btn bg2x bxs" data-cid="'+c.id+'" onclick="reviveCandidate(this.dataset.cid)">Revive</button></td>'+
+      '</tr>';
+  });
+  tbody.innerHTML=html;
+}
+
+async function reviveCandidate(candidateId){
+  if(!confirm('Move this candidate back to Shortlisted?'))return;
+  var r=await db.from('scout_candidates').update({stage:'shortlisted',rejection_reason:null,closed_at:null}).eq('id',candidateId);
+  if(r.error){toast('Failed to revive.','fail');return;}
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  if(c){c.stage='shortlisted';c.rejection_reason=null;c.closed_at=null;}
+  toast(c?c.full_name+' moved back to Shortlisted':'Revived');
+  renderDirectory();renderDashboard();
 }
 
 async function saveNotes(candidateId){
