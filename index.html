@@ -531,6 +531,16 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         <select class="inp bxs" id="af-role" onchange="renderAssignments()" style="min-width:180px;">
           <option value="">All roles</option>
         </select>
+        <select class="inp bxs" id="af-seniority" onchange="renderAssignments()" style="min-width:140px;">
+          <option value="">All levels</option>
+          <option value="intern">Intern</option>
+          <option value="junior">Junior</option>
+          <option value="mid">Mid</option>
+          <option value="senior">Senior</option>
+          <option value="lead">Lead</option>
+          <option value="head">Head</option>
+          <option value="director">Director</option>
+        </select>
         <button class="btn bg2x bxs" id="af-clear" onclick="clearAsgnFilter()" style="display:none;">Clear filter</button>
         <span id="af-count" style="font-size:12px;color:var(--text3);"></span>
       </div>
@@ -705,7 +715,18 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
     <p class="msub">Create a task to send to candidates.</p>
     <input type="hidden" id="asgn-id"/>
     <div class="frow"><label class="lbl">Title *</label><input class="inp" id="asgn-title" placeholder="e.g. Design a social media post"/></div>
-    <div class="frow"><label class="lbl">Role (leave blank for generic)</label>
+    <div class="frow"><label class="lbl">Seniority level</label>
+      <select class="inp" id="asgn-seniority">
+        <option value="">Not specified</option>
+        <option value="intern">Intern</option>
+        <option value="junior">Junior</option>
+        <option value="mid">Mid</option>
+        <option value="senior">Senior</option>
+        <option value="lead">Lead</option>
+        <option value="head">Head</option>
+        <option value="director">Director</option>
+      </select></div>
+    <div class="frow"><label class="lbl">Role type (leave blank for generic)</label>
       <select class="inp" id="asgn-role">
         <option value="">-- Generic / all roles --</option>
         <option value="">-- Select role --</option>
@@ -1390,14 +1411,9 @@ function populateAsgnRoleFilter(){
   // Get unique role names from assignments
   var seen={};
   ALL_ASSIGNMENTS.forEach(function(a){
-    var name=a.role_id?rName(a.role_id):'Generic';
-    if(!seen[name]){
-      seen[name]=true;
-      var o=document.createElement('option');
-      o.value=a.role_id||'__generic__';
-      o.textContent=name;
-      el.appendChild(o);
-    }
+    var key=a.role_type||'generic';
+    var name=a.role_type?(ROLE_DISPLAY[a.role_type]||a.role_type):'Generic';
+    if(!seen[key]){seen[key]=true;var o=document.createElement('option');o.value=key;o.textContent=name;el.appendChild(o);}
   });
   if(current) el.value=current;
 }
@@ -1409,10 +1425,11 @@ function renderAssignments(){
   var countEl=document.getElementById('af-count');
   if(clearBtn) clearBtn.style.display=roleF?'':'none';
 
+  var senF=(document.getElementById('af-seniority')||{value:''}).value;
   var filtered=ALL_ASSIGNMENTS.filter(function(a){
-    if(!roleF) return true;
-    if(roleF==='__generic__') return !a.role_id;
-    return a.role_id===roleF;
+    if(roleF&&(a.role_type||'generic')!==roleF)return false;
+    if(senF&&(a.seniority_level||'')!==senF)return false;
+    return true;
   });
 
   if(countEl) countEl.textContent=filtered.length+' of '+ALL_ASSIGNMENTS.length+' assignments';
@@ -1429,8 +1446,10 @@ function renderAssignments(){
   var groups={};
   var groupOrder=[];
   filtered.forEach(function(a){
-    var key=a.role_id||'__generic__';
-    var label=a.role_id?rName(a.role_id):'Generic';
+    var key=(a.role_type||'generic')+'_'+(a.seniority_level||'');
+    var rLabel=a.role_type?(ROLE_DISPLAY[a.role_type]||a.role_type):'Generic';
+    var sLabel=a.seniority_level?a.seniority_level.charAt(0).toUpperCase()+a.seniority_level.slice(1):'';
+    var label=sLabel?rLabel+' — '+sLabel:rLabel;
     if(!groups[key]){groups[key]={label:label,items:[]};groupOrder.push(key);}
     groups[key].items.push(a);
   });
@@ -1467,6 +1486,7 @@ if(dashIdx>-1) displayTitle=displayTitle.substring(dashIdx+4);
 else displayTitle=displayTitle.replace(/^.+Assignment [A-Z]? /,'').replace(/^Assignment /,'');
 
       hdEl.innerHTML=
+        (a.seniority_level?'<span class="sb sb-gray" style="font-size:10px;padding:2px 7px;margin-right:4px">'+a.seniority_level+'</span>':'')+
         (optLetter?'<span class="asgn-option-badge">Option '+optLetter+'</span>':'')+
         '<span class="asgn-card-title">'+esc(displayTitle)+'</span>'+
         '<div class="asgn-card-meta">'+
@@ -1915,6 +1935,7 @@ function openEditAssignment(id){
   document.getElementById('asgn-id').value=a.id;
   document.getElementById('asgn-title').value=a.title||'';
   document.getElementById('asgn-role').value=a.role_id||'';
+  document.getElementById('asgn-seniority').value=a.seniority_level||'';
   document.getElementById('asgn-desc').value=a.description||'';
   document.getElementById('asgn-instructions').value=a.instructions||'';
   document.getElementById('asgn-days').value=a.duration_days||'';
