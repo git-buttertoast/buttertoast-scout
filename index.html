@@ -150,6 +150,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 .sb-confirmed{background:var(--gdim2);color:var(--green);border:1px solid var(--gdim2);}
 .sb-hired{background:var(--gdim2);color:var(--green);border:1px solid var(--gdim2);}
 .sb-rejected{background:var(--rdim);color:var(--red);border:1px solid var(--rdim2);}
+.sb-withdrew{background:var(--adim);color:var(--amber);border:1px solid rgba(232,168,56,0.25);}
 
 /* ── TEMPLATES / ASSIGNMENTS ────────────────────────────────────────────────── */
 .tpl-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;}
@@ -434,6 +435,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
           <option value="confirmed">Confirmed</option>
           <option value="hired">Hired</option>
           <option value="rejected">Rejected</option>
+          <option value="withdrew">Withdrew</option>
         </select>
         <select class="fsel" id="cand-role-filter" onchange="renderCandidates()"><option value="">All roles</option></select>
       </div>
@@ -1017,7 +1019,8 @@ var STAGES = [
   {key:'offer_sent',label:'Offer Sent'},
   {key:'confirmed',label:'Confirmed'},
   {key:'hired',label:'Hired'},
-  {key:'rejected',label:'Rejected'}
+  {key:'rejected',label:'Rejected'},
+  {key:'withdrew',label:'Withdrew'}
 ];
 
 var DEPT_DISPLAY = {
@@ -1200,7 +1203,7 @@ function setupMobile(){
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 function renderDashboard(){
-  var active=ALL_CANDIDATES.filter(function(c){return c.stage!=='hired'&&c.stage!=='rejected';});
+  var active=ALL_CANDIDATES.filter(function(c){return c.stage!=='hired'&&c.stage!=='rejected'&&c.stage!=='withdrew';});
   var hired=ALL_CANDIDATES.filter(function(c){return c.stage==='hired';});
   var offers=ALL_CANDIDATES.filter(function(c){return c.stage==='offer'||c.stage==='offer_sent'||c.stage==='confirmed';});
   var openRoles=ALL_ROLES.filter(function(r){return r.status==='open';});
@@ -1237,13 +1240,13 @@ function renderDashboard(){
 function renderPipeline(){
   var roleFilter=document.getElementById('pipe-role-filter').value;
   var active=ALL_CANDIDATES.filter(function(c){
-    if(c.stage==='hired'||c.stage==='rejected')return false;
+    if(c.stage==='hired'||c.stage==='rejected'||c.stage==='withdrew')return false;
     if(roleFilter&&c.role_id!==roleFilter)return false;
     return true;
   });
 
   var html='';
-  STAGES.filter(function(s){return s.key!=='hired'&&s.key!=='rejected';}).forEach(function(s){
+  STAGES.filter(function(s){return s.key!=='hired'&&s.key!=='rejected'&&s.key!=='withdrew';}).forEach(function(s){
     var cards=active.filter(function(c){return c.stage===s.key;});
     html+='<div class="pipe-col">'+
       '<div class="pipe-col-hd"><span class="pipe-col-title">'+s.label+'</span><span class="pipe-count">'+cards.length+'</span></div>'+
@@ -1300,7 +1303,7 @@ function renderRoles(){
   var html='';
   if(!ALL_ROLES.length){html='<div class="empty">No roles yet. Add your first open position.</div>';}
   ALL_ROLES.forEach(function(r){
-    var count=ALL_CANDIDATES.filter(function(c){return c.role_id===r.id&&c.stage!=='hired'&&c.stage!=='rejected';}).length;
+    var count=ALL_CANDIDATES.filter(function(c){return c.role_id===r.id&&c.stage!=='hired'&&c.stage!=='rejected'&&c.stage!=='withdrew';}).length;
     html+='<div class="role-card">'+
       '<div class="role-card-left">'+
         '<h3>'+esc(r.title)+'</h3>'+
@@ -1506,7 +1509,10 @@ function openCandidate(id){
     html+='<button class="stage-btn'+(c.stage===s.key?' current':'')+'" onclick="moveStage(\''+id+'\',\''+s.key+'\')">'+s.label+'</button>';
   });
   html+='</div>';
+  html+='<div style="display:flex;gap:8px;margin-top:8px">';
   html+='<button class="btn bd bsm" onclick="moveStage(\''+id+'\',\'rejected\')">Mark rejected</button>';
+  html+='<button class="btn bsm" style="background:var(--adim);color:var(--amber);border:1px solid rgba(232,168,56,0.25)" onclick="moveStage(\''+id+'\',\'withdrew\')">Candidate withdrew</button>';
+  html+='</div>';
   html+='</div>';
 
   // Details
