@@ -1433,7 +1433,6 @@ var SEN_COLORS={
   director:'color:var(--red);background:var(--rdim);border:1px solid var(--rdim2)',
   founder:'color:var(--red);background:var(--rdim);border:1px solid var(--rdim2)'
 };
-
 function toggleAsgnGroup(key){
   ASGN_GROUP_COLLAPSED[key]=!ASGN_GROUP_COLLAPSED[key];
   var body=document.getElementById('asgngrp-'+key);
@@ -1441,7 +1440,6 @@ function toggleAsgnGroup(key){
   if(body)body.style.display=ASGN_GROUP_COLLAPSED[key]?'none':'block';
   if(icon)icon.style.transform=ASGN_GROUP_COLLAPSED[key]?'rotate(-90deg)':'rotate(0deg)';
 }
-
 function renderAssignments(){
   populateAsgnRoleFilter();
   var roleF=(document.getElementById('af-role')||{value:''}).value;
@@ -1449,21 +1447,17 @@ function renderAssignments(){
   var searchQ=((document.getElementById('af-search')||{value:''}).value||'').toLowerCase();
   var clearBtn=document.getElementById('af-clear');
   var countEl=document.getElementById('af-count');
-  if(clearBtn) clearBtn.style.display=(roleF||senF||searchQ)?'':'none';
-
+  if(clearBtn)clearBtn.style.display=(roleF||senF||searchQ)?'':'none';
   var filtered=ALL_ASSIGNMENTS.filter(function(a){
     if(roleF&&(a.role_type||'generic')!==roleF)return false;
     if(senF&&(a.seniority_level||'')!==senF)return false;
     if(searchQ&&!(a.title||'').toLowerCase().includes(searchQ)&&!(a.description||'').toLowerCase().includes(searchQ))return false;
     return true;
   });
-
-  if(countEl) countEl.textContent=filtered.length+' of '+ALL_ASSIGNMENTS.length+' assignments';
+  if(countEl)countEl.textContent=filtered.length+' of '+ALL_ASSIGNMENTS.length+' assignments';
   var container=document.getElementById('assignments-body');
   container.innerHTML='';
   if(!filtered.length){container.innerHTML='<div class="empty">No assignments match the filter.</div>';return;}
-
-  // Group by role_type + seniority
   var groups={};
   filtered.forEach(function(a){
     var key=(a.role_type||'generic')+'__'+(a.seniority_level||'untagged');
@@ -1472,82 +1466,961 @@ function renderAssignments(){
     if(!groups[key]){groups[key]={key:key,rLabel:rLabel,sen:sen,items:[]};}
     groups[key].items.push(a);
   });
-
-  // Sort: alphabetically by role, then by seniority order
   var groupOrder=Object.keys(groups).sort(function(a,b){
     var ga=groups[a],gb=groups[b];
     if(ga.rLabel<gb.rLabel)return -1;
     if(ga.rLabel>gb.rLabel)return 1;
     return SEN_ORDER.indexOf(ga.sen)-SEN_ORDER.indexOf(gb.sen);
   });
-
   var frag=document.createDocumentFragment();
   groupOrder.forEach(function(key){
     var grp=groups[key];
     var isCollapsed=!!ASGN_GROUP_COLLAPSED[key];
     var senStyle=SEN_COLORS[grp.sen]||SEN_COLORS.intern;
     var senLabel=grp.sen.charAt(0).toUpperCase()+grp.sen.slice(1);
-
     var groupDiv=document.createElement('div');
     groupDiv.className='asgn-role-group';
-
     var hd=document.createElement('div');
     hd.className='asgn-role-group-hd';
     hd.onclick=function(){toggleAsgnGroup(key);};
     hd.innerHTML=
-      '<span id="asgngrp-icon-'+key+'" style="color:var(--text3);font-size:10px;transition:transform 0.15s;display:inline-block;'+(isCollapsed?'transform:rotate(-90deg)':'')+'">&#9660;</span>'+
+      '<span id="asgngrp-icon-'+key+'" style="color:var(--text3);font-size:10px;transition:transform 0.15s;display:inline-block;'+(isCollapsed?'transform:rotate(-90deg)':'')+'">▼</span>'+
       '<span class="asgn-role-group-title" style="flex:1">'+esc(grp.rLabel)+'</span>'+
       '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;'+senStyle+'">'+senLabel+'</span>'+
       '<span class="asgn-role-group-count">'+grp.items.length+' brief'+(grp.items.length>1?'s':'')+'</span>';
     groupDiv.appendChild(hd);
-
     var groupBody=document.createElement('div');
     groupBody.id='asgngrp-'+key;
     groupBody.style.display=isCollapsed?'none':'block';
     groupBody.style.paddingTop='6px';
-
     grp.items.forEach(function(a){
       var optLetter=getAsgnOptionLabel(a.title);
       var card=document.createElement('div');
       card.className='asgn-card';
-
       var hdEl=document.createElement('div');
       hdEl.className='asgn-card-hd';
       hdEl.addEventListener('click',function(){toggleAsgnCard(a.id);});
-
       var displayTitle=a.title;
       var dashIdx=displayTitle.indexOf(' -- ');
-      if(dashIdx>-1) displayTitle=displayTitle.substring(dashIdx+4);
+      if(dashIdx>-1)displayTitle=displayTitle.substring(dashIdx+4);
       else displayTitle=displayTitle.replace(/^.+Assignment [A-Z]? /,'').replace(/^Assignment /,'');
-
       hdEl.innerHTML=
         (optLetter?'<span class="asgn-option-badge">Option '+optLetter+'</span>':'')+
         '<span class="asgn-card-title">'+esc(displayTitle)+'</span>'+
         '<div class="asgn-card-meta">'+
           (a.duration_days?'<span class="asgn-duration-tag">'+a.duration_days*24+' hr window</span>':'')+
-          '<button class="btn bg2x bxs" onclick="event.stopPropagation();openEditAssignment(''+a.id+'')">Edit</button>'+
+          '<button class="btn bg2x bxs" onclick="event.stopPropagation();openEditAssignment(&apos;'+a.id+'&apos;)">Edit</button>'+
         '</div>'+
         '<span class="asgn-expand-icon" id="asgni-'+a.id+'">&#9660;</span>';
-
       var bodyEl=document.createElement('div');
       bodyEl.className='asgn-card-body';
       bodyEl.id='asgnb-'+a.id;
-
       if(a.description){var desc=document.createElement('div');desc.className='asgn-card-desc';desc.textContent=a.description;bodyEl.appendChild(desc);}
       if(a.instructions){var pre=document.createElement('div');pre.className='asgn-instructions-preview';pre.textContent=a.instructions;bodyEl.appendChild(pre);}
       var actions=document.createElement('div');
       actions.className='asgn-card-actions';
-      actions.innerHTML='<button class="btn bg2x bsm" onclick="openEditAssignment(''+a.id+'')">Edit assignment</button>';
+      actions.innerHTML='<button class="btn bg2x bsm" onclick="openEditAssignment(&apos;'+a.id+'&apos;)">Edit assignment</button>';
       bodyEl.appendChild(actions);
-
       card.appendChild(hdEl);
       card.appendChild(bodyEl);
       groupBody.appendChild(card);
     });
-
     groupDiv.appendChild(groupBody);
     frag.appendChild(groupDiv);
   });
   container.appendChild(frag);
 }
 
+function renderTemplates(){
+  var html='';
+  if(!ALL_TEMPLATES.length){html='<div class="empty">No templates yet.</div>';}
+  ALL_TEMPLATES.forEach(function(t){
+    html+='<div class="tpl-card">'+
+      '<div class="tpl-card-hd">'+
+        '<span class="tpl-card-title">'+esc(t.label)+'</span>'+
+        '<div style="display:flex;gap:6px;align-items:center;">'+
+          '<span class="tpl-card-stage">'+stageLabel(t.stage)+'</span>'+
+          '<button class="btn bg2x bxs" onclick="openEditTemplate(\''+t.id+'\')">Edit</button>'+
+        '</div>'+
+      '</div>'+
+      (t.subject?'<div style="font-size:12px;color:var(--text3);margin-top:4px;margin-bottom:4px;">Subject: '+esc(t.subject)+'</div>':'')+
+      (t.body?'<div class="tpl-card-body" style="white-space:pre-wrap;">'+esc(t.body.substring(0,200))+(t.body.length>200?'...':'')+'</div>':'')+
+      '</div>';
+  });
+  document.getElementById('templates-body').innerHTML=html;
+}
+
+// ── CANDIDATE DETAIL DRAWER ───────────────────────────────────────────────────
+function openCandidate(id){
+  ACTIVE_CANDIDATE = ALL_CANDIDATES.find(function(c){return c.id===id;});
+  if(!ACTIVE_CANDIDATE)return;
+  var c=ACTIVE_CANDIDATE;
+  document.getElementById('d-name').textContent=c.full_name;
+  document.getElementById('d-role-sub').innerHTML=esc(rName(c.role_id))+' &ndash; '+esc(stageLabel(c.stage));
+
+  var html='';
+
+  // Stage progression
+  html+='<div class="dsec"><div class="dsec-hd">Stage</div>';
+  html+='<div class="stage-flow">';
+  STAGES.forEach(function(s){
+    if(s.key==='rejected')return;
+    html+='<button class="stage-btn'+(c.stage===s.key?' current':'')+'" onclick="moveStage(\''+id+'\',\''+s.key+'\')">'+s.label+'</button>';
+  });
+  html+='</div>';
+  html+='<div style="display:flex;gap:8px;margin-top:8px">';
+  html+='<button class="btn bd bsm" onclick="moveStage(\''+id+'\',\'rejected\')">Mark rejected</button>';
+  html+='<button class="btn bsm" style="background:var(--adim);color:var(--amber);border:1px solid rgba(232,168,56,0.25)" onclick="moveStage(\''+id+'\',\'withdrew\')">Candidate withdrew</button>';
+  html+='</div>';
+  html+='</div>';
+
+  // Details
+  html+='<div class="dsec"><div class="dsec-hd">Details</div>';
+  html+='<div class="dgrid">';
+  html+='<div class="ditem"><label>Email</label><span class="val">'+(c.email?'<a href="mailto:'+esc(c.email)+'" class="link-ext">'+esc(c.email)+'</a>':'--')+'</span></div>';
+  (function(){
+    if(c.phone){
+      var rawPhone=c.phone.replace(/[\s\-().]/g,'');
+      var waNum=rawPhone.startsWith('+')?rawPhone.slice(1):rawPhone.startsWith('0')?'91'+rawPhone.slice(1):rawPhone;
+      html+='<div class="ditem" style="grid-column:1/-1"><label>Phone</label>'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap;">'+
+        '<a href="tel:'+rawPhone+'" class="btn bg2x bsm" style="text-decoration:none;">'+
+        '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M14 10.667c-1.2 0-2.356-.187-3.44-.533a1.333 1.333 0 00-1.387.307l-2.12 2.12A10.293 10.293 0 013.44 9.96l2.12-2.12a1.333 1.333 0 00.307-1.387A10.693 10.693 0 015.333 2C5.333 1.267 4.733.667 4 .667H2C1.267.667.667 1.267.667 2 .667 9.367 6.633 15.333 14 15.333c.733 0 1.333-.6 1.333-1.333v-2c0-.733-.6-1.333-1.333-1.333z" fill="currentColor"/></svg>'+
+        'Call</a>'+
+        '<a href="https://wa.me/'+waNum+'" target="_blank" class="btn bgreen bsm" style="text-decoration:none;">'+
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>'+
+        'WhatsApp</a>'+
+        '<span class="val" style="font-size:13px;">'+esc(c.phone)+'</span>'+
+        '</div></div>';
+    } else {
+      html+='<div class="ditem"><label>Phone</label><span class="val">--</span></div>';
+    }
+  }());
+  html+=''
+  html+='<div class="ditem"><label>Source</label><span class="val">'+(SOURCE_LABELS[c.source]||c.source||'--')+'</span></div>';
+  html+='<div class="ditem"><label>Added</label><span class="val">'+fmtAgo(c.created_at)+'</span></div>';
+  if(c.linkedin_url)html+='<div class="ditem" style="grid-column:1/-1"><label>LinkedIn</label><span><a href="'+esc(c.linkedin_url)+'" target="_blank" class="link-ext">View profile &#8599;</a></span></div>';
+  if(c.drive_folder_link)html+='<div class="ditem" style="grid-column:1/-1"><label>Drive folder</label><span><a href="'+esc(c.drive_folder_link)+'" target="_blank" class="link-ext">Open folder &#8599;</a></span></div>';
+  html+='</div></div>';
+
+  // Actions
+  html+='<div class="dsec"><div class="dsec-hd">Actions</div>';
+  html+='<div class="dactions">';
+  html+='<button class="btn bg2x bsm" onclick="openEditCandidate(\''+id+'\')">Edit details</button>';
+  html+='<button class="btn bg2x bsm" onclick="addToContacts(\''+id+'\')">Save contact</button>';
+  if(c.stage==='offer'||c.stage==='offer_sent'||c.stage==='confirmed'){
+    html+='<button class="btn bgreen bsm" onclick="openOfferModal(\''+id+'\')">Generate offer letter</button>';
+  }
+  if(c.stage==='confirmed'||c.stage==='hired'){
+    html+='<button class="btn bp bsm" onclick="openConvertModal(\''+id+'\')">Convert to employee</button>';
+  }
+  html+='</div></div>';
+
+  // Notes
+  html+='<div class="dsec"><div class="dsec-hd">Notes</div>';
+  html+='<textarea class="notes-area" id="cand-notes-ta" onblur="saveNotes(\''+id+'\')">'+esc(c.notes||'')+'</textarea>';
+  html+='</div>';
+
+  document.getElementById('candidate-body').innerHTML=html;
+  openM('m-candidate');
+}
+
+async function moveStage(candidateId,stage){
+  if(stage==='rejected'||stage==='withdrew'){openReasonModal(candidateId,stage);return;}
+  confirmMoveStage(candidateId,stage,null);
+}
+
+var PENDING_REASON={id:null,stage:null};
+function openReasonModal(id,stage){
+  PENDING_REASON={id:id,stage:stage};
+  var c=ALL_CANDIDATES.find(function(x){return x.id===id;});
+  var isRej=stage==='rejected';
+  var reasons=isRej
+    ?['Not the right fit','Weak portfolio / work samples','Failed assignment','Salary expectations too high','Over/underqualified','Poor communication','Better candidate selected','Role closed','Other']
+    :['Accepted another offer','Salary expectations not met','Role not the right fit','Personal reasons','No response / ghosted','Location / remote preference','Other'];
+  document.getElementById('reason-modal-title').textContent=isRej?'Mark as Rejected':'Candidate Withdrew';
+  var opts=reasons.map(function(r){return '<option value="'+esc(r)+'">'+esc(r)+'</option>';}).join('');
+  document.getElementById('reason-modal-body').innerHTML=
+    '<p style="font-size:13px;color:var(--text2);margin-bottom:16px;">'+(c?esc(c.full_name):'')+'</p>'+
+    '<div class="field" style="margin-bottom:0"><label>Reason</label>'+
+    '<select id="reason-select" style="width:100%"><option value="">Select a reason...</option>'+opts+'</select></div>';
+  document.getElementById('btn-confirm-reason').onclick=function(){
+    var reason=document.getElementById('reason-select').value;
+    if(!reason){toast('Please select a reason','fail');return;}
+    confirmMoveStage(PENDING_REASON.id,PENDING_REASON.stage,reason);
+  };
+  openM('m-reason');
+}
+
+async function confirmMoveStage(candidateId,stage,reason){
+  var now=new Date().toISOString();
+  var updates={stage:stage};
+  if(reason)updates.rejection_reason=reason;
+  if(stage==='rejected'||stage==='withdrew')updates.closed_at=now;
+  var r=await db.from('scout_candidates').update(updates).eq('id',candidateId);
+  if(r.error){toast('Failed to update stage.','fail');return;}
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  if(c){c.stage=stage;if(reason)c.rejection_reason=reason;if(updates.closed_at)c.closed_at=now;}
+  toast('Stage updated to '+stageLabel(stage));
+  closeM('m-reason');
+  openCandidate(candidateId);
+  renderDashboard();
+  var ap=document.querySelector('.page.show');
+  if(ap&&ap.id==='page-pipeline')renderPipeline();
+  if(ap&&ap.id==='page-candidates')renderCandidates();
+  if(ap&&ap.id==='page-directory')renderDirectory();
+}
+
+function renderDirectory(){
+  var q=(document.getElementById('dir-search').value||'').toLowerCase();
+  var sf=document.getElementById('dir-stage-filter').value;
+  var rf=document.getElementById('dir-role-filter').value;
+  var dir=ALL_CANDIDATES.filter(function(c){return c.stage==='rejected'||c.stage==='withdrew';});
+  var filtered=dir.filter(function(c){
+    if(sf&&c.stage!==sf)return false;
+    if(rf&&c.role_id!==rf)return false;
+    if(q&&!(c.full_name||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  var rf_el=document.getElementById('dir-role-filter');
+  var cur=rf_el.value;
+  var rs={};
+  dir.forEach(function(c){if(c.role_id)rs[c.role_id]=rName(c.role_id);});
+  rf_el.innerHTML='<option value="">All roles</option>';
+  Object.keys(rs).forEach(function(rid){
+    rf_el.innerHTML+='<option value="'+rid+'"'+(cur===rid?' selected':'')+'>'+esc(rs[rid])+'</option>';
+  });
+  var tbody=document.getElementById('dir-tbody');
+  if(!filtered.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:48px;color:var(--text3)">No candidates in directory yet.</td></tr>';return;}
+  var html='';
+  filtered.forEach(function(c){
+    var dateStr=c.closed_at
+      ?new Date(c.closed_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})
+      :fmtAgo(c.created_at);
+    html+='<tr style="cursor:pointer" onclick="openCandidate(\''+c.id+'\')">'+
+      '<td class="tdn">'+esc(c.full_name)+'</td>'+
+      '<td>'+esc(rName(c.role_id))+'</td>'+
+      '<td>'+stageBadge(c.stage)+'</td>'+
+      '<td>'+esc(c.rejection_reason||'--')+'</td>'+
+      '<td>'+dateStr+'</td>'+
+      '<td><div style="display:flex;gap:6px"><button class="btn bg2x bxs" data-cid="'+c.id+'" onclick="event.stopPropagation();reviveCandidate(this.dataset.cid)">Revive</button></div></td>'+
+      '</tr>';
+  });
+  tbody.innerHTML=html;
+}
+
+async function reviveCandidate(candidateId){
+  if(!confirm('Move this candidate back to Shortlisted?'))return;
+  var r=await db.from('scout_candidates').update({stage:'shortlisted',rejection_reason:null,closed_at:null}).eq('id',candidateId);
+  if(r.error){toast('Failed to revive.','fail');return;}
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  if(c){c.stage='shortlisted';c.rejection_reason=null;c.closed_at=null;}
+  toast(c?c.full_name+' moved back to Shortlisted':'Revived');
+  renderDirectory();renderDashboard();
+}
+
+async function saveNotes(candidateId){
+  var ta=document.getElementById('cand-notes-ta'); if(!ta)return;
+  var notes=ta.value;
+  await db.from('scout_candidates').update({notes:notes}).eq('id',candidateId);
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  if(c)c.notes=notes;
+}
+
+// ── ADD/EDIT CANDIDATE ────────────────────────────────────────────────────────
+function openAddCandidate(roleId){
+  document.getElementById('m-ac-title').textContent='Add candidate';
+  document.getElementById('ac-id').value='';
+  document.getElementById('ac-name').value='';
+  document.getElementById('ac-email').value='';
+  document.getElementById('ac-phone').value='';
+  document.getElementById('ac-role').value=roleId||'';
+  document.getElementById('ac-source').value='linkedin';
+  document.getElementById('ac-linkedin').value='';
+  document.getElementById('ac-notes').value='';
+  openM('m-add-candidate');
+}
+
+function openEditCandidate(id){
+  var c=ALL_CANDIDATES.find(function(x){return x.id===id;});
+  if(!c)return;
+  document.getElementById('m-ac-title').textContent='Edit candidate';
+  document.getElementById('ac-id').value=c.id;
+  document.getElementById('ac-name').value=c.full_name||'';
+  document.getElementById('ac-email').value=c.email||'';
+  document.getElementById('ac-phone').value=c.phone||'';
+  document.getElementById('ac-role').value=c.role_id||'';
+  document.getElementById('ac-source').value=c.source||'linkedin';
+  document.getElementById('ac-linkedin').value=c.linkedin_url||'';
+  document.getElementById('ac-notes').value=c.notes||'';
+  closeM('m-candidate');
+  openM('m-add-candidate');
+}
+
+function addToContacts(id){
+  var c=ALL_CANDIDATES.find(function(x){return x.id===id;});
+  if(!c)return;
+  var nameParts=c.full_name.trim().split(' ');
+  var firstName=nameParts[0]||'';
+  var lastName=nameParts.slice(1).join(' ')||'';
+  var roleName=rName(c.role_id)||'';
+  var lines=[
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    'N:'+lastName+';'+firstName+';;;',
+    'FN:'+c.full_name,
+    'ORG:Buttertoast',
+    'TITLE:'+roleName
+  ];
+  if(c.phone){lines.push('TEL;TYPE=CELL:'+c.phone);}
+  if(c.email){lines.push('EMAIL:'+c.email);}
+  if(c.linkedin_url){lines.push('URL:'+c.linkedin_url);}
+  lines.push('NOTE:Source: '+(c.source||'')+(c.notes?'\nNotes: '+c.notes.replace(/\n/g,'\\n'):''));
+  lines.push('END:VCARD');
+  var vcf=lines.join('\r\n');
+  var blob=new Blob([vcf],{type:'text/vcard'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download=(c.full_name.replace(/\s+/g,'_')||'contact')+'.vcf';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+}
+
+
+async function saveCandidate(){
+  var btn=document.getElementById('btn-save-candidate');
+  var name=document.getElementById('ac-name').value.trim();
+  var roleId=document.getElementById('ac-role').value;
+  if(!name){toast('Name is required.','fail');return;}
+  if(!roleId){toast('Please select a role.','fail');return;}
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
+
+  var id=document.getElementById('ac-id').value;
+  var payload={
+    full_name:name, email:document.getElementById('ac-email').value.trim()||null,
+    phone:document.getElementById('ac-phone').value.trim()||null,
+    role_id:roleId, source:document.getElementById('ac-source').value,
+    linkedin_url:document.getElementById('ac-linkedin').value.trim()||null,
+    notes:document.getElementById('ac-notes').value.trim()||null
+  };
+
+  var r;
+  if(id){
+    r=await db.from('scout_candidates').update(payload).eq('id',id).select().single();
+  } else {
+    payload.stage='shortlisted'; payload.created_by=ME.id;
+    r=await db.from('scout_candidates').insert(payload).select().single();
+    // Create Drive folder
+    if(!r.error&&r.data){
+      var role=ALL_ROLES.find(function(x){return x.id===roleId;});
+      driveCall({action:'create_candidate_folder',name:name,role:role?role.title:'General'}).then(function(dr){
+        if(dr&&dr.folderId){
+          db.from('scout_candidates').update({drive_folder_id:dr.folderId,drive_folder_link:dr.folderLink}).eq('id',r.data.id);
+          var c=ALL_CANDIDATES.find(function(x){return x.id===r.data.id;});
+          if(c){c.drive_folder_id=dr.folderId;c.drive_folder_link=dr.folderLink;}
+        }
+      });
+    }
+  }
+
+  btn.disabled=false; btn.innerHTML='Save candidate';
+  if(r.error){toast('Failed to save.','fail');return;}
+  await loadAllData();
+  closeM('m-add-candidate');
+  toast(id?'Candidate updated.':'Candidate added.');
+  renderDashboard();
+}
+
+// ── ROLES CRUD ────────────────────────────────────────────────────────────────
+function onRoleTypeChange(){
+  var role=document.getElementById('r-role-type').value;
+  var sen=document.getElementById('r-seniority').value;
+  // Auto-set department from role
+  var dept=JD_ROLE_DEPT[role]||'';
+  document.getElementById('r-dept').value=dept;
+  // Auto-suggest title
+  if(role&&sen){
+    var suggested=autoDesignation(sen,role,dept);
+    if(suggested) document.getElementById('r-title').value=suggested;
+  }
+  populateJDDropdown(role,sen);
+}
+function onRoleSeniorityChange(){
+  var role=document.getElementById('r-role-type').value;
+  var sen=document.getElementById('r-seniority').value;
+  var dept=JD_ROLE_DEPT[role]||'';
+  if(role&&sen){
+    var suggested=autoDesignation(sen,role,dept);
+    if(suggested) document.getElementById('r-title').value=suggested;
+  }
+  populateJDDropdown(role,sen);
+}
+function onRoleJDChange(){
+  // When JD is selected, notes field label updates
+  var jdVal=document.getElementById('r-jd').value;
+  var notesLabel=document.querySelector('#r-notes-row .lbl');
+  if(notesLabel) notesLabel.textContent=jdVal?'Notes (JD attached -- add role-specific notes)':'Notes';
+}
+function openRoleModal(){
+  document.getElementById('m-role-title').textContent='Add role';
+  document.getElementById('r-id').value='';
+  document.getElementById('r-title').value='';
+  document.getElementById('r-role-type').value='';
+  document.getElementById('r-seniority').value='';
+  document.getElementById('r-dept').value='';
+  document.getElementById('r-req').value='';
+  document.getElementById('r-type').value='permanent';
+  document.getElementById('r-desc').value='';
+  document.getElementById('r-status').value='open';
+  document.getElementById('r-budget').value='';
+  document.getElementById('r-hire-by').value='';
+  document.getElementById('r-jd').value='';
+  populateJDDropdown('','');
+  openM('m-role');
+}
+
+function openEditRole(id){
+  var r=ALL_ROLES.find(function(x){return x.id===id;});
+  if(!r)return;
+  document.getElementById('m-role-title').textContent='Edit role';
+  document.getElementById('r-id').value=r.id;
+  document.getElementById('r-title').value=r.title||'';
+  document.getElementById('r-role-type').value=r.role_type||'';
+  document.getElementById('r-seniority').value=r.seniority_level||'';
+  document.getElementById('r-dept').value=r.department||JD_ROLE_DEPT[r.role_type]||'';
+  document.getElementById('r-req').value=r.requirements||'';
+  document.getElementById('r-type').value=r.employment_type||'permanent';
+  document.getElementById('r-desc').value=r.description||'';
+  document.getElementById('r-status').value=r.status||'open';
+  document.getElementById('r-budget').value=r.budget||'';
+  document.getElementById('r-hire-by').value=r.hire_by_date||'';
+  populateJDDropdown(r.role_type||'',r.seniority_level||'');
+  document.getElementById('r-jd').value=r.jd_template_id||'';
+  // Update notes label
+  var notesLabel=document.querySelector('#r-notes-row .lbl');
+  if(notesLabel) notesLabel.textContent=r.jd_template_id?'Notes (JD attached -- add role-specific notes)':'Notes';
+  openM('m-role');
+}
+
+async function saveRole(){
+  var btn=document.getElementById('btn-save-role');
+  var title=document.getElementById('r-title').value.trim();
+  if(!title){toast('Title is required.','fail');return;}
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
+  var id=document.getElementById('r-id').value;
+  var payload={title:title,role_type:document.getElementById('r-role-type').value||null,seniority_level:document.getElementById('r-seniority').value||null,department:document.getElementById('r-dept').value||null,employment_type:document.getElementById('r-type').value,description:document.getElementById('r-desc').value.trim()||null,budget:document.getElementById('r-budget').value.trim()||null,hire_by_date:document.getElementById('r-hire-by').value||null,jd_template_id:document.getElementById('r-jd').value||null,status:document.getElementById('r-status').value};
+  var r=id?await db.from('scout_roles').update(payload).eq('id',id):await db.from('scout_roles').insert({...payload,created_by:ME.id});
+  btn.disabled=false; btn.innerHTML='Save role';
+  if(r.error){toast('Failed to save.','fail');return;}
+  await loadAllData();
+  closeM('m-role');
+  toast(id?'Role updated.':'Role added.');
+  renderRoles();
+}
+
+// ── ASSIGNMENT CRUD ───────────────────────────────────────────────────────────
+function openAssignmentModal(){
+  document.getElementById('m-asgn-title').textContent='Add assignment';
+  document.getElementById('asgn-id').value='';
+  document.getElementById('asgn-title').value='';
+  document.getElementById('asgn-role').value='';
+  document.getElementById('asgn-desc').value='';
+  document.getElementById('asgn-instructions').value='';
+  document.getElementById('asgn-days').value='';
+  openM('m-assignment');
+}
+function openEditAssignment(id){
+  var a=ALL_ASSIGNMENTS.find(function(x){return x.id===id;});
+  if(!a)return;
+  document.getElementById('m-asgn-title').textContent='Edit assignment';
+  document.getElementById('asgn-id').value=a.id;
+  document.getElementById('asgn-title').value=a.title||'';
+  document.getElementById('asgn-role').value=a.role_id||'';
+  document.getElementById('asgn-seniority').value=a.seniority_level||'';
+  document.getElementById('asgn-desc').value=a.description||'';
+  document.getElementById('asgn-instructions').value=a.instructions||'';
+  document.getElementById('asgn-days').value=a.duration_days||'';
+  openM('m-assignment');
+}
+async function saveAssignment(){
+  var btn=document.getElementById('btn-save-asgn');
+  var title=document.getElementById('asgn-title').value.trim();
+  if(!title){toast('Title is required.','fail');return;}
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
+  var id=document.getElementById('asgn-id').value;
+  var payload={title:title,role_id:document.getElementById('asgn-role').value||null,description:document.getElementById('asgn-desc').value.trim()||null,instructions:document.getElementById('asgn-instructions').value.trim()||null,duration_days:parseInt(document.getElementById('asgn-days').value)||null};
+  var r=id?await db.from('scout_assignments').update(payload).eq('id',id):await db.from('scout_assignments').insert(payload);
+  btn.disabled=false; btn.innerHTML='Save assignment';
+  if(r.error){toast('Failed to save.','fail');return;}
+  await loadAllData();
+  closeM('m-assignment');
+  toast(id?'Assignment updated.':'Assignment added.');
+  renderAssignments();
+}
+
+// ── TEMPLATE CRUD ─────────────────────────────────────────────────────────────
+function openTemplateModal(){
+  document.getElementById('m-tpl-title').textContent='Add template';
+  document.getElementById('tpl-id').value='';
+  document.getElementById('tpl-label').value='';
+  document.getElementById('tpl-stage').value='shortlisted';
+  document.getElementById('tpl-subject').value='';
+  document.getElementById('tpl-body').value='';
+  openM('m-template');
+}
+function openEditTemplate(id){
+  var t=ALL_TEMPLATES.find(function(x){return x.id===id;});
+  if(!t)return;
+  document.getElementById('m-tpl-title').textContent='Edit template';
+  document.getElementById('tpl-id').value=t.id;
+  document.getElementById('tpl-label').value=t.label||'';
+  document.getElementById('tpl-stage').value=t.stage||'shortlisted';
+  document.getElementById('tpl-subject').value=t.subject||'';
+  document.getElementById('tpl-body').value=t.body||'';
+  openM('m-template');
+}
+async function saveTemplate(){
+  var btn=document.getElementById('btn-save-tpl');
+  var label=document.getElementById('tpl-label').value.trim();
+  if(!label){toast('Label is required.','fail');return;}
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
+  var id=document.getElementById('tpl-id').value;
+  var payload={label:label,stage:document.getElementById('tpl-stage').value,subject:document.getElementById('tpl-subject').value.trim()||null,body:document.getElementById('tpl-body').value.trim()||null};
+  var r=id?await db.from('scout_templates').update(payload).eq('id',id):await db.from('scout_templates').insert(payload);
+  btn.disabled=false; btn.innerHTML='Save template';
+  if(r.error){toast('Failed to save.','fail');return;}
+  await loadAllData();
+  closeM('m-template');
+  toast(id?'Template updated.':'Template added.');
+  renderTemplates();
+}
+
+// ── OFFER LETTER ──────────────────────────────────────────────────────────────
+function openOfferModal(candidateId){
+  document.getElementById('offer-cand-id').value=candidateId;
+  // Pre-fill joining date with today
+  document.getElementById('offer-joining').value=new Date().toISOString().split('T')[0];
+  closeM('m-candidate');
+  openM('m-offer');
+}
+
+async function generateOfferLetter(){
+  var btn=document.getElementById('btn-gen-offer');
+  var spin=document.getElementById('offer-spin');
+  var candId=document.getElementById('offer-cand-id').value;
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candId;});
+  if(!c){toast('Candidate not found.','fail');return;}
+  var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
+
+  var ctc=document.getElementById('offer-ctc').value.trim();
+  var joining=document.getElementById('offer-joining').value;
+  var probation=document.getElementById('offer-probation').value;
+  var notice=document.getElementById('offer-notice').value;
+  var sigName=document.getElementById('offer-sig-name').value.trim();
+  var sigDesig=document.getElementById('offer-sig-desig').value.trim();
+
+  if(!ctc||!joining){toast('CTC and joining date are required.','fail');return;}
+
+  btn.disabled=true; spin.style.display='inline-block';
+
+  // Generate HTML content for the letter
+  var letterHtml = generateOfferLetterHTML({
+    candidateName: c.full_name,
+    roleTitle: role?role.title:'',
+    department: role?(DEPT_DISPLAY[role.department]||role.department):'',
+    employmentType: role?role.employment_type:'permanent',
+    joiningDate: fmt(joining),
+    ctc: ctc,
+    probationMonths: probation,
+    noticeDays: notice,
+    signatoryName: sigName,
+    signatoryDesignation: sigDesig,
+    generatedDate: new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})
+  });
+
+  // Convert to base64 for upload
+  var b64 = btoa(unescape(encodeURIComponent(letterHtml)));
+  var fileName = 'Offer Letter - '+c.full_name+' - '+new Date().toISOString().split('T')[0]+'.html';
+
+  // Upload to Drive
+  var folderId = c.drive_folder_id;
+  var driveLink = null;
+
+  if(folderId){
+    var dr = await driveCall({action:'upload_file',folderId:folderId,fileName:fileName,base64:b64,mimeType:'text/html'});
+    if(dr&&dr.fileLink) driveLink=dr.fileLink;
+  }
+
+  // Save to scout_offers
+  var offerPayload={candidate_id:candId,role_id:c.role_id,ctc:ctc,joining_date:joining,probation_months:parseInt(probation),notice_period_days:parseInt(notice),signatory_name:sigName,signatory_designation:sigDesig,status:'sent'};
+  if(driveLink)offerPayload.offer_letter_drive_link=driveLink;
+  await db.from('scout_offers').insert(offerPayload);
+
+  // Move stage to offer_sent
+  await db.from('scout_candidates').update({stage:'offer_sent'}).eq('id',candId);
+  var cnd=ALL_CANDIDATES.find(function(x){return x.id===candId;});
+  if(cnd)cnd.stage='offer_sent';
+
+  btn.disabled=false; spin.style.display='none';
+  closeM('m-offer');
+
+  // Download locally
+  downloadHTML(letterHtml, fileName);
+  toast(driveLink?'Offer letter saved to Drive and downloaded.':'Offer letter downloaded. Drive save skipped (no folder).');
+  renderDashboard();
+}
+
+function generateOfferLetterHTML(data){
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>body{font-family:Georgia,serif;font-size:13px;line-height:1.8;color:#111;max-width:750px;margin:40px auto;padding:0 40px;}h1{font-size:18px;margin-bottom:4px;}h3{font-size:14px;margin-bottom:6px;margin-top:24px;}p{margin-bottom:12px;}table{width:100%;border-collapse:collapse;margin:16px 0;}td{padding:8px 12px;border:1px solid #ddd;font-size:13px;}.header{border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:24px;}.footer{margin-top:60px;border-top:1px solid #ddd;padding-top:20px;}</style></head><body>'+
+  '<div class="header"><h1>Buttertoast</h1><p style="color:#666;font-size:12px;">Date: '+data.generatedDate+'</p></div>'+
+  '<p>Dear <strong>'+esc(data.candidateName)+'</strong>,</p>'+
+  '<p>We are pleased to extend this offer of employment for the position of <strong>'+esc(data.roleTitle)+'</strong> at Buttertoast. We believe your skills and experience will be a valuable addition to our team.</p>'+
+  '<h3>Terms of Employment</h3>'+
+  '<table><tr><td><strong>Position</strong></td><td>'+esc(data.roleTitle)+'</td></tr>'+
+  (data.department?'<tr><td><strong>Department</strong></td><td>'+esc(data.department)+'</td></tr>':'')+
+  '<tr><td><strong>Employment Type</strong></td><td>'+esc(data.employmentType)+'</td></tr>'+
+  '<tr><td><strong>Date of Joining</strong></td><td>'+esc(data.joiningDate)+'</td></tr>'+
+  '<tr><td><strong>Compensation</strong></td><td>'+esc(data.ctc)+'</td></tr>'+
+  '<tr><td><strong>Probation Period</strong></td><td>'+esc(data.probationMonths)+' months</td></tr>'+
+  '<tr><td><strong>Notice Period</strong></td><td>'+esc(data.noticeDays)+' days</td></tr></table>'+
+  '<p>This offer is contingent upon successful completion of any applicable background verification and the submission of required documents prior to or on your joining date.</p>'+
+  '<p>Please sign and return a copy of this letter as your formal acceptance of this offer. By signing, you confirm your agreement with the terms stated herein.</p>'+
+  '<p>We look forward to welcoming you to the Buttertoast team.</p>'+
+  '<div class="footer">'+
+  '<p>Warm regards,</p>'+
+  '<p><strong>'+esc(data.signatoryName)+'</strong><br/>'+esc(data.signatoryDesignation)+'<br/>Buttertoast</p>'+
+  '<br/><br/>'+
+  '<p>Accepted by: _______________________________&nbsp;&nbsp;&nbsp;&nbsp; Date: _______________</p>'+
+  '<p>'+esc(data.candidateName)+'</p>'+
+  '</div></body></html>';
+}
+
+function downloadHTML(html, fileName){
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download=fileName;
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);document.body.removeChild(a);},1000);
+}
+
+// ── CONVERT TO EMPLOYEE ───────────────────────────────────────────────────────
+function openConvertModal(candidateId){
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  if(!c)return;
+  var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
+  document.getElementById('conv-cand-id').value=candidateId;
+  document.getElementById('conv-joining').value=new Date().toISOString().split('T')[0];
+  document.getElementById('conv-role').value='';
+  document.getElementById('conv-seniority').value='';
+  document.getElementById('conv-desig').value='';
+  document.getElementById('conv-dept').value=role&&role.department?role.department:'design';
+  document.getElementById('conv-type').value=role&&role.employment_type?role.employment_type:'permanent';
+  if(document.getElementById('conv-desig-display')) document.getElementById('conv-desig-display').textContent='--';
+  document.getElementById('conv-aadhaar').value='';
+  document.getElementById('conv-pan').value='';
+  document.getElementById('conv-bank').value='';
+  document.getElementById('conv-acc').value='';
+  document.getElementById('conv-ifsc').value='';
+  document.getElementById('conv-emp-id').value='';
+  closeM('m-candidate');
+  openM('m-convert');
+}
+
+async function doConvert(){
+  var btn=document.getElementById('btn-convert');
+  var spin=document.getElementById('conv-spin');
+  var candId=document.getElementById('conv-cand-id').value;
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candId;});
+  if(!c)return;
+
+  var empId=document.getElementById('conv-emp-id').value.trim();
+  var joining=document.getElementById('conv-joining').value;
+  var desig=document.getElementById('conv-desig').value.trim();
+  var role=document.getElementById('conv-role').value;
+  var seniority=document.getElementById('conv-seniority').value;
+  var dept=document.getElementById('conv-dept').value;
+  var empType=document.getElementById('conv-type').value;
+
+  if(!empId||!joining||!desig||!role||!seniority){
+    toast('Employee ID, joining date, role, seniority and designation are required.','fail');
+    return;
+  }
+  if(!c.email){toast('Candidate must have an email address to create an employee account.','fail');return;}
+
+  btn.disabled=true; spin.style.display='inline-block';
+
+  // 1. Create employee Drive folder
+  var driveFolderData=null;
+  try{
+    var dr=await driveCall({action:'create_employee_folder',employeeId:empId,name:c.full_name});
+    if(dr&&!dr.error)driveFolderData=dr;
+  }catch(e){}
+
+  // 1b. Copy candidate files to employee folder + rename candidate folder to [HIRED]
+  if(driveFolderData&&c.drive_folder_id){
+    try{
+      await driveCall({
+        action:'convert_candidate',
+        candidateFolderId:c.drive_folder_id,
+        employeeId:empId,
+        name:c.full_name
+      });
+    }catch(e){}
+  }
+
+  // 2. Call Edge Function to create auth user + all Roster records
+  try{
+    var payload={
+      candidateId: candId,
+      fullName: c.full_name,
+      email: c.email,
+      employeeId: empId,
+      joiningDate: joining,
+      role: role,
+      seniority: seniority,
+      designation: desig,
+      department: dept,
+      employmentType: empType,
+      aadhaarNumber: document.getElementById('conv-aadhaar').value.trim()||null,
+      panNumber: document.getElementById('conv-pan').value.trim()||null,
+      bankName: document.getElementById('conv-bank').value.trim()||null,
+      accountNumber: document.getElementById('conv-acc').value.trim()||null,
+      ifscCode: document.getElementById('conv-ifsc').value.trim()||null,
+      driveFolderId: driveFolderData?driveFolderData.folderId:null,
+      driveFolderLink: driveFolderData?driveFolderData.folderLink:null,
+      companyDocsFolderId: driveFolderData?driveFolderData.companyDocsFolderId:null,
+      signedCopiesFolderId: driveFolderData?driveFolderData.signedCopiesFolderId:null,
+      reportsTo: '13ec9b24-a840-43ff-8a65-57a47b2d0d49'
+    };
+
+    var res=await fetch('https://ferlauhakdbfpwfapxxw.supabase.co/functions/v1/convert-to-employee',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+ANON_KEY
+      },
+      body:JSON.stringify(payload)
+    });
+    var result=await res.json();
+
+    if(result.error){
+      toast('Error: '+result.error,'fail');
+      btn.disabled=false; spin.style.display='none';
+      return;
+    }
+
+    // Update local state
+    var cnd=ALL_CANDIDATES.find(function(x){return x.id===candId;});
+    if(cnd)cnd.stage='hired';
+
+    btn.disabled=false; spin.style.display='none';
+    closeM('m-convert');
+
+    // Show success with temp password -- admin needs to share this with the new employee
+    var msg='Employee account created in Roster.\n\nTemp password: '+result.tempPassword+'\n\nShare this with '+c.full_name+' -- they can change it after first login.';
+    alert(msg);
+    toast(c.full_name+' is now an employee in Roster.');
+    renderDashboard();
+
+  }catch(err){
+    toast('Conversion failed: '+String(err),'fail');
+    btn.disabled=false; spin.style.display='none';
+  }
+}
+
+// ── DRIVE HELPER ──────────────────────────────────────────────────────────────
+async function driveCall(payload){
+  try{
+    var r=await fetch(DRIVE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    return await r.json();
+  }catch(e){
+    console.error('Drive call failed:',e);
+    return {error:e.message};
+  }
+}
+
+// ── JD LIBRARY ────────────────────────────────────────────────────────────────
+var JD_ROLE_DEPT={'graphic_designer':'design','motion_designer':'design','ui_ux_designer':'design','art_director':'design','video_editor':'video','cinematographer':'video','content_writer':'content','copywriter':'content','brand_strategist':'strategy','account_manager':'account_management','business_developer':'business_development','media_planner':'paid_media','media_buyer':'paid_media','seo_specialist':'seo','frontend_developer':'web_development','backend_developer':'web_development','consultant':'consulting','project_manager':'operations','operations_manager':'operations','hr_manager':'hr','finance_manager':'finance'};
+var JD_SEN_ORDER=['intern','junior','mid','senior','lead','head','director','founder'];
+
+var JD_DEPT_ROLES={"design": ["graphic_designer", "motion_designer", "ui_ux_designer", "art_director"], "video": ["video_editor", "cinematographer"], "content": ["content_writer", "copywriter"], "strategy": ["brand_strategist"], "account_management": ["account_manager"], "business_development": ["business_developer"], "paid_media": ["media_planner", "media_buyer"], "seo": ["seo_specialist"], "web_development": ["frontend_developer", "backend_developer"], "consulting": ["consultant"], "operations": ["project_manager", "operations_manager"], "hr": ["hr_manager"], "finance": ["finance_manager"]};
+var JD_ALL_ROLE_OPTIONS=[["Graphic Designer", "graphic_designer"], ["Motion Designer", "motion_designer"], ["UI/UX Designer", "ui_ux_designer"], ["Art Director", "art_director"], ["Video Editor", "video_editor"], ["Cinematographer", "cinematographer"], ["Content Writer", "content_writer"], ["Copywriter", "copywriter"], ["Brand Strategist", "brand_strategist"], ["Account Manager", "account_manager"], ["Business Developer", "business_developer"], ["Media Planner", "media_planner"], ["Media Buyer", "media_buyer"], ["SEO Specialist", "seo_specialist"], ["Frontend Developer", "frontend_developer"], ["Backend Developer", "backend_developer"], ["Consultant", "consultant"], ["Project Manager", "project_manager"], ["Operations Manager", "operations_manager"], ["HR Manager", "hr_manager"], ["Finance Manager", "finance_manager"]];
+
+function onDeptFilterChange(){
+  var deptF=document.getElementById('jdf-dept').value;
+  var roleEl=document.getElementById('jdf-role');
+  var currentRole=roleEl.value;
+  // Rebuild role dropdown based on dept
+  while(roleEl.options.length>1) roleEl.remove(1);
+  var allowed=deptF?JD_DEPT_ROLES[deptF]||[]:null;
+  JD_ALL_ROLE_OPTIONS.forEach(function(pair){
+    if(allowed && allowed.indexOf(pair[1])===-1) return;
+    var o=document.createElement('option');
+    o.value=pair[1]; o.textContent=pair[0];
+    roleEl.appendChild(o);
+  });
+  // Clear role selection if it's no longer valid
+  if(currentRole && allowed && allowed.indexOf(currentRole)===-1) roleEl.value='';
+  renderJDLibrary();
+}
+
+function clearJDFilters(){
+  ['jdf-dept','jdf-role','jdf-sen'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  renderJDLibrary();
+}
+
+function toggleJDCard(id){
+  var body=document.getElementById('jdb-'+id);
+  var icon=document.getElementById('jdi-'+id);
+  if(!body) return;
+  body.classList.toggle('open',!body.classList.contains('open'));
+  if(icon) icon.classList.toggle('open',!icon.classList.contains('open'));
+}
+
+function renderJDLibrary(){
+  var deptF=(document.getElementById('jdf-dept')||{value:''}).value;
+  var roleF=(document.getElementById('jdf-role')||{value:''}).value;
+  var senF=(document.getElementById('jdf-sen')||{value:''}).value;
+  var clearBtn=document.getElementById('jdf-clear');
+  var countEl=document.getElementById('jdf-count');
+  if(clearBtn) clearBtn.style.display=(deptF||roleF||senF)?'':'none';
+  var filtered=ALL_JDS.filter(function(j){
+    if(roleF&&j.role_type!==roleF) return false;
+    if(senF&&j.seniority_level!==senF) return false;
+    if(deptF){var rd=JD_ROLE_DEPT[j.role_type]||'';if(rd!==deptF) return false;}
+    return true;
+  });
+  filtered.sort(function(a,b){
+    var ra=ROLE_DISPLAY[a.role_type]||a.role_type||'';
+    var rb=ROLE_DISPLAY[b.role_type]||b.role_type||'';
+    if(ra<rb) return -1; if(ra>rb) return 1;
+    return JD_SEN_ORDER.indexOf(a.seniority_level)-JD_SEN_ORDER.indexOf(b.seniority_level);
+  });
+  if(countEl) countEl.textContent=filtered.length+' of '+ALL_JDS.length+' JDs';
+  if(!filtered.length){
+    document.getElementById('jd-body').innerHTML='<div class="empty">No JDs match the selected filters.</div>';
+    return;
+  }
+  var frag=document.createDocumentFragment();
+  filtered.forEach(function(j){
+    var usedBy=ALL_ROLES.filter(function(r){return r.jd_template_id===j.id;});
+    var roleLabel=j.role_type?(ROLE_DISPLAY[j.role_type]||j.role_type):'All roles';
+    var senLabel=j.seniority_level?j.seniority_level.charAt(0).toUpperCase()+j.seniority_level.slice(1):'All levels';
+    var card=document.createElement('div'); card.className='jd-card';
+    var hd=document.createElement('div'); hd.className='jd-card-hd';
+    hd.addEventListener('click',function(e){
+      if(e.target.tagName==='BUTTON') return;
+      toggleJDCard(j.id);
+    });
+    var metaHtml='<span class="jd-card-title">'+esc(j.title)+'</span>'
+      +'<div class="jd-card-meta">'
+      +'<span class="tpl-card-stage">'+esc(roleLabel)+'</span>'
+      +'<span class="tpl-card-stage">'+esc(senLabel)+'</span>'
+      +(usedBy.length?'<span class="tpl-card-stage" style="color:var(--green);">Used in '+usedBy.length+' role'+(usedBy.length>1?'s':'')+'</span>':'')
+      +'<button class="btn bg2x bxs" data-jdid="'+j.id+'" data-action="edit-jd">Edit</button>'
+      +'<button class="btn bg2x bxs" data-jdid="'+j.id+'" data-action="dl-jd">Download</button>'
+      +'</div>'
+      +'<span class="jd-expand-icon" id="jdi-'+j.id+'">&#9660;</span>';
+    hd.innerHTML=metaHtml;
+    var body=document.createElement('div'); body.className='jd-card-body'; body.id='jdb-'+j.id;
+    if(j.content){
+      var pre=document.createElement('div'); pre.style.marginBottom='10px'; pre.textContent=j.content;
+      body.appendChild(pre);
+    }
+    if(usedBy.length){
+      var ul=document.createElement('div'); ul.style.cssText='font-size:11px;color:var(--green);margin-bottom:8px;';
+      ul.textContent='Used by: '+usedBy.map(function(r){return r.title;}).join(', ');
+      body.appendChild(ul);
+    }
+    card.appendChild(hd); card.appendChild(body);
+    frag.appendChild(card);
+  });
+  var el=document.getElementById('jd-body');
+  el.innerHTML='';
+  el.appendChild(frag);
+}
+
+function populateJDDropdown(roleType, seniority){
+  var el=document.getElementById('r-jd'); if(!el)return;
+  var val=el.value;
+  while(el.options.length>1) el.remove(1);
+  var filtered=ALL_JDS.filter(function(j){
+    if(j.role_type&&roleType&&j.role_type!==roleType)return false;
+    if(j.seniority_level&&seniority&&j.seniority_level!==seniority)return false;
+    return true;
+  });
+  filtered.forEach(function(j){
+    var o=document.createElement('option');o.value=j.id;
+    o.textContent=j.title+(j.role_type||j.seniority_level?' ('+[j.role_type?ROLE_DISPLAY[j.role_type]||j.role_type:'',j.seniority_level||''].filter(Boolean).join(', ')+')':'');
+    el.appendChild(o);
+  });
+  var hint=document.getElementById('r-jd-hint');
+  if(hint) hint.textContent=filtered.length?filtered.length+' JD'+(filtered.length>1?'s':'') +' available for this role/seniority.':'No JDs match this role/seniority yet. You can still assign any JD.';
+  if(val) el.value=val;
+}
+
+function openJDModal(){
+  document.getElementById('m-jd-title').textContent='Add JD';
+  document.getElementById('jd-id').value='';
+  document.getElementById('jd-title').value='';
+  document.getElementById('jd-role-type').value='';
+  document.getElementById('jd-seniority').value='';
+  document.getElementById('jd-content').value='';
+  openM('m-jd');
+}
+
+function openEditJD(id){
+  var j=ALL_JDS.find(function(x){return x.id===id;}); if(!j)return;
+  document.getElementById('m-jd-title').textContent='Edit JD';
+  document.getElementById('jd-id').value=j.id;
+  document.getElementById('jd-title').value=j.title||'';
+  document.getElementById('jd-role-type').value=j.role_type||'';
+  document.getElementById('jd-seniority').value=j.seniority_level||'';
+  document.getElementById('jd-content').value=j.content||'';
+  openM('m-jd');
+}
+
+async function saveJD(){
+  var btn=document.getElementById('btn-save-jd');
+  var title=document.getElementById('jd-title').value.trim();
+  var jdContent=document.getElementById('jd-content').value.trim();
+  if(!title){toast('Title is required.','fail');return;}
+  if(!jdContent){toast('JD content is required.','fail');return;}
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
+  var id=document.getElementById('jd-id').value;
+  var payload={title:title,role_type:document.getElementById('jd-role-type').value||null,seniority_level:document.getElementById('jd-seniority').value||null,content:jdContent};
+  var r=id?await db.from('scout_jd_templates').update(payload).eq('id',id):await db.from('scout_jd_templates').insert(payload);
+  btn.disabled=false; btn.innerHTML='Save JD';
+  if(r.error){toast('Failed to save.','fail');return;}
+  await loadAllData();
+  closeM('m-jd');
+  toast(id?'JD updated.':'JD added.');
+  renderJDLibrary();
+}
+
+function downloadJD(id){
+  var j=ALL_JDS.find(function(x){return x.id===id;}); if(!j)return;
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>'+esc(j.title)+'</title>'+
+    '<style>body{font-family:Georgia,serif;font-size:14px;line-height:1.8;color:#111;max-width:800px;margin:40px auto;padding:0 40px;}h1{font-size:20px;font-weight:700;margin-bottom:4px;}h2{font-size:16px;font-weight:700;margin:24px 0 8px;}p,li{margin-bottom:8px;}ul{padding-left:20px;}.header{border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:28px;}.meta{font-size:12px;color:#666;margin-top:6px;}</style>'+
+    '</head><body>'+
+    '<div class="header"><h1>'+esc(j.title)+'</h1>'+
+    '<div class="meta">'+(j.role_type?'Role: '+(ROLE_DISPLAY[j.role_type]||j.role_type)+' &nbsp;|&nbsp; ':'')+
+    (j.seniority_level?'Level: '+j.seniority_level.charAt(0).toUpperCase()+j.seniority_level.slice(1)+' &nbsp;|&nbsp; ':'')+
+    'Generated: '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})+'</div></div>'+
+    '<div style="white-space:pre-wrap;">'+esc(j.content)+'</div>'+
+    '</body></html>';
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download=j.title.replace(/[^a-z0-9]/gi,'_')+'.html';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);document.body.removeChild(a);},1000);
+  toast('JD downloaded.');
+}
+</script>
+</body>
+</html>
