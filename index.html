@@ -1673,13 +1673,13 @@ function renderDirectory(){
     var dateStr=c.closed_at
       ?new Date(c.closed_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})
       :fmtAgo(c.created_at);
-    html+='<tr style="cursor:pointer">'+
+    html+='<tr style="cursor:pointer" onclick="openCandidate(\''+c.id+'\')">'+
       '<td class="tdn">'+esc(c.full_name)+'</td>'+
       '<td>'+esc(rName(c.role_id))+'</td>'+
       '<td>'+stageBadge(c.stage)+'</td>'+
       '<td>'+esc(c.rejection_reason||'--')+'</td>'+
       '<td>'+dateStr+'</td>'+
-      '<td><div style="display:flex;gap:6px"><button class="btn bg2x bxs" data-cid="'+c.id+'" onclick="reviveCandidate(this.dataset.cid)">Revive</button></div></td>'+
+      '<td><div style="display:flex;gap:6px"><button class="btn bg2x bxs" data-cid="'+c.id+'" onclick="event.stopPropagation();reviveCandidate(this.dataset.cid)">Revive</button></div></td>'+
       '</tr>';
   });
   tbody.innerHTML=html;
