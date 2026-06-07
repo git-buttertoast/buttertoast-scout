@@ -2535,6 +2535,8 @@ async function doConvert(){
     var msg='Employee account created in Roster.\n\nTemp password: '+result.tempPassword+'\n\nShare this with '+c.full_name+' -- they can change it after first login.';
     alert(msg);
     toast(c.full_name+' is now an employee in Roster.');
+    // Wire up drive folder URL and KYC profile link
+    if(result.employeeId) onConvertEmployeeSuccess(result.employeeId, candId);
     renderDashboard();
 
   }catch(err){
