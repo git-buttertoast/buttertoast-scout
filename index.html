@@ -111,9 +111,9 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 /* ── STAGE COLORS ───────────────────────────────────────────────────────────── */
 .stage-shortlisted{border-left:3px solid var(--text3);}
 .stage-screening{border-left:3px solid var(--blue);}
-.stage-interview1{border-left:3px solid var(--purple);}
+.stage-interview{border-left:3px solid var(--purple);}
 .stage-assignment{border-left:3px solid var(--amber);}
-.stage-interview2{border-left:3px solid var(--orange);}
+
 .stage-offer{border-left:3px solid var(--green);}
 .stage-offer_sent{border-left:3px solid var(--green);}
 .stage-confirmed{border-left:3px solid var(--green);}
@@ -142,9 +142,9 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 .stage-badge{font-size:11px;border-radius:20px;padding:3px 9px;font-weight:500;white-space:nowrap;}
 .sb-shortlisted{background:var(--bg3);color:var(--text2);border:1px solid var(--border);}
 .sb-screening{background:var(--bdim);color:var(--blue);border:1px solid rgba(74,158,218,0.25);}
-.sb-interview1{background:var(--pdim);color:var(--purple);border:1px solid rgba(168,85,247,0.25);}
+.sb-interview{background:var(--pdim);color:var(--purple);border:1px solid rgba(168,85,247,0.25);}
 .sb-assignment{background:var(--adim);color:var(--amber);border:1px solid rgba(232,168,56,0.25);}
-.sb-interview2{background:var(--odim);color:var(--orange);border:1px solid rgba(249,115,22,0.25);}
+
 .sb-offer{background:var(--gdim);color:var(--green);border:1px solid var(--gdim2);}
 .sb-offer_sent{background:var(--gdim);color:var(--green);border:1px solid var(--gdim2);}
 .sb-confirmed{background:var(--gdim2);color:var(--green);border:1px solid var(--gdim2);}
@@ -431,9 +431,8 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
           <option value="">All stages</option>
           <option value="shortlisted">Shortlisted</option>
           <option value="screening">Screening</option>
-          <option value="interview1">Interview 1</option>
+          <option value="interview">Interview</option>
           <option value="assignment">Assignment</option>
-          <option value="interview2">Interview 2</option>
           <option value="offer">Offer</option>
           <option value="offer_sent">Offer Sent</option>
           <option value="confirmed">Confirmed</option>
@@ -775,9 +774,8 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
       <select class="inp" id="tpl-stage">
         <option value="shortlisted">Shortlisted</option>
         <option value="screening">Screening</option>
-        <option value="interview1">Interview 1</option>
+        <option value="interview">Interview</option>
         <option value="assignment">Assignment</option>
-        <option value="interview2">Interview 2</option>
         <option value="offer">Offer</option>
         <option value="offer_sent">Offer Sent</option>
         <option value="confirmed">Confirmed</option>
@@ -1067,9 +1065,8 @@ function updateConvDesig(){
 var STAGES = [
   {key:'shortlisted',label:'Shortlisted'},
   {key:'screening',label:'Screening'},
-  {key:'interview1',label:'Interview 1'},
+  {key:'interview',label:'Interview'},
   {key:'assignment',label:'Assignment'},
-  {key:'interview2',label:'Interview 2'},
   {key:'offer',label:'Offer'},
   {key:'offer_sent',label:'Offer Sent'},
   {key:'confirmed',label:'Confirmed'},
