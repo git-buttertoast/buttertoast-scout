@@ -558,7 +558,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
     <!-- DIRECTORY -->
     <div class="page" id="page-directory">
       <div class="ph">
-        <div class="ph-left"><h1>Directory</h1><p>All rejected and withdrawn candidates</p></div>
+        <div class="ph-left"><h1>Directory</h1><p>Rejected, withdrawn, and hired candidates</p></div>
       </div>
       <div class="filters-row">
         <input class="search-inp" id="dir-search" placeholder="Search name..." oninput="renderDirectory()"/>
@@ -566,6 +566,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
           <option value="">All</option>
           <option value="rejected">Rejected</option>
           <option value="withdrew">Withdrew</option>
+          <option value="hired">Hired</option>
         </select>
         <select class="fsel" id="dir-role-filter" onchange="renderDirectory()">
           <option value="">All roles</option>
@@ -1988,7 +1989,7 @@ function renderDirectory(){
   var q=(document.getElementById('dir-search').value||'').toLowerCase();
   var sf=document.getElementById('dir-stage-filter').value;
   var rf=document.getElementById('dir-role-filter').value;
-  var dir=ALL_CANDIDATES.filter(function(c){return c.stage==='rejected'||c.stage==='withdrew';});
+  var dir=ALL_CANDIDATES.filter(function(c){return c.stage==='rejected'||c.stage==='withdrew'||c.stage==='hired';});
   var filtered=dir.filter(function(c){
     if(sf&&c.stage!==sf)return false;
     if(rf&&c.role_id!==rf)return false;
@@ -2007,21 +2008,49 @@ function renderDirectory(){
   if(!filtered.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:48px;color:var(--text3)">No candidates in directory yet.</td></tr>';return;}
   var html='';
   filtered.forEach(function(c){
-    var dateStr=c.closed_at
-      ?new Date(c.closed_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})
-      :fmtAgo(c.created_at);
-    html+='<tr style="cursor:pointer" onclick="openCandidate(\''+c.id+'\')">'+
+    var isHired=c.stage==='hired';
+    var dateStr=isHired
+      ?(c.joining_date?'Joined '+new Date(c.joining_date+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'--')
+      :(c.closed_at?new Date(c.closed_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):fmtAgo(c.created_at));
+    var note=isHired?'Converted to employee':(c.rejection_reason||'--');
+    var row=document.createElement('tr');
+    row.style.cursor='pointer';
+    row.dataset.cid=c.id;
+    row.addEventListener('click',function(){openCandidate(this.dataset.cid);});
+    row.innerHTML=
       '<td class="tdn">'+esc(c.full_name)+'</td>'+
       '<td>'+esc(rName(c.role_id))+'</td>'+
       '<td>'+stageBadge(c.stage)+'</td>'+
-      '<td>'+esc(c.rejection_reason||'--')+'</td>'+
+      '<td>'+esc(note)+'</td>'+
       '<td>'+dateStr+'</td>'+
-      '<td><div style="display:flex;gap:6px"><button class="btn bg2x bxs" data-cid="'+c.id+'" onclick="event.stopPropagation();reviveCandidate(this.dataset.cid)">Revive</button></div></td>'+
+      '<td><div style="display:flex;gap:6px">'+
+        (isHired?'<span style="font-size:11px;color:var(--green);font-weight:600;">Hired</span>':'<button class="btn bg2x bxs" data-cid="'+c.id+'" onclick="event.stopPropagation();reviveCandidate(this.dataset.cid)">Revive</button>')+
+      '</div></td>';
+    tbody.appendChild(row);
+  });
+  tbody.innerHTML='';
+  filtered.forEach(function(c){
+    var isHired=c.stage==='hired';
+    var dateStr=isHired
+      ?(c.joining_date?'Joined '+new Date(c.joining_date+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'--')
+      :(c.closed_at?new Date(c.closed_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):fmtAgo(c.created_at));
+    var note=isHired?'Converted to employee':(c.rejection_reason||'--');
+    html+='<tr style="cursor:pointer" data-cid="'+c.id+'" onclick="openCandidate(this.dataset.cid)">'+
+      '<td class="tdn">'+esc(c.full_name)+'</td>'+
+      '<td>'+esc(rName(c.role_id))+'</td>'+
+      '<td>'+stageBadge(c.stage)+'</td>'+
+      '<td>'+esc(note)+'</td>'+
+      '<td>'+dateStr+'</td>'+
+      '<td><div style="display:flex;gap:6px">'+
+        (isHired
+          ?'<span style="font-size:11px;color:var(--green);font-weight:600;">Hired</span>'
+          :'<button class="btn bg2x bxs" data-cid="'+c.id+'" onclick="event.stopPropagation();reviveCandidate(this.dataset.cid)">Revive</button>'
+        )+
+      '</div></td>'+
       '</tr>';
   });
   tbody.innerHTML=html;
 }
-
 async function reviveCandidate(candidateId){
   if(!confirm('Move this candidate back to Shortlisted?'))return;
   var r=await db.from('scout_candidates').update({stage:'shortlisted',rejection_reason:null,closed_at:null}).eq('id',candidateId);
