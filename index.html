@@ -300,6 +300,9 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
   .stage-flow{gap:6px;}
   .stage-btn{font-size:11px;padding:5px 10px;}
 }
+.ob-tab{background:none;border:none;border-bottom:2px solid transparent;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;transition:all 0.12s;}
+.ob-tab.active{color:var(--orange);border-bottom-color:var(--orange);}
+.ob-tab-content{display:none;}
 </style>
 </head>
 <body>
@@ -372,6 +375,11 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
       <button class="nb" data-page="templates">
         <svg class="ni" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Templates
+      </button>
+      <button class="nb" data-page="onboarding">
+        <svg class="ni" viewBox="0 0 16 16" fill="none"><path d="M8 2L2 7v7h4v-4h4v4h4V7L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        Onboarding
+        <span class="nb-badge" id="nb-onboarding" style="display:none">0</span>
       </button>
       <div class="sb-section">Quick links</div>
       <button class="nb" onclick="window.open('https://kitchentools.buttertoast.co')">
@@ -567,7 +575,60 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
     </div>
 
     <!-- TEMPLATES -->
-    <div class="page" id="page-templates">
+    <div class="page" id="page-onboarding">
+  <div class="ph">
+    <div class="ph-left"><h1>Onboarding</h1><p>Active onboarding entries</p></div>
+  </div>
+  <div id="onboarding-list"></div>
+  <div class="mbg mbg-c" id="m-onboarding">
+    <div class="modal" style="max-width:600px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;">
+        <div><h2 id="ob-name" style="margin:0 0 2px">Candidate</h2><p class="msub" id="ob-role" style="margin:0"></p></div>
+        <button class="btn bg2x bxs" onclick="closeM('m-onboarding')">Close</button>
+      </div>
+      <input type="hidden" id="ob-id"/>
+      <div id="ob-tabs" style="display:flex;gap:0;border-bottom:1px solid var(--bdr);margin:12px 0 0;">
+        <button class="ob-tab active" data-tab="checklist" onclick="switchObTab('checklist')">Checklist</button>
+        <button class="ob-tab" data-tab="kyc" onclick="switchObTab('kyc')">KYC Details</button>
+        <button class="ob-tab" data-tab="docs" onclick="switchObTab('docs')">Documents</button>
+      </div>
+      <div id="ob-tab-checklist" class="ob-tab-content" style="display:block;">
+        <div id="ob-checklist-items" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
+        <div style="margin-top:16px;">
+          <button class="btn bp" id="ob-complete-btn" onclick="markOnboardingComplete()" style="display:none">Mark Onboarding Complete</button>
+        </div>
+      </div>
+      <div id="ob-tab-kyc" class="ob-tab-content">
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="frow"><label class="lbl">Aadhaar Number</label><input class="inp" id="kyc-aadhaar" placeholder="1234 5678 9012"/></div>
+          <div class="frow"><label class="lbl">PAN Number</label><input class="inp" id="kyc-pan" placeholder="ABCDE1234F"/></div>
+          <div class="frow"><label class="lbl">Bank Name</label><input class="inp" id="kyc-bank" placeholder="HDFC Bank"/></div>
+          <div class="frow"><label class="lbl">Account Number</label><input class="inp" id="kyc-acc" placeholder="0123456789"/></div>
+          <div class="frow"><label class="lbl">IFSC Code</label><input class="inp" id="kyc-ifsc" placeholder="HDFC0001234"/></div>
+          <div class="frow"><label class="lbl">Date of Birth</label>
+            <div style="position:relative;width:100%">
+              <input type="text" class="inp" id="kyc-dob-display" readonly placeholder="Select date" style="cursor:pointer"/>
+              <input type="date" id="kyc-dob" onchange="document.getElementById('kyc-dob-display').value=fmtDateShort(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
+            </div>
+          </div>
+          <div class="frow" style="grid-column:1/-1"><label class="lbl">Emergency Contact Name</label><input class="inp" id="kyc-emergency-name" placeholder="Full name"/></div>
+          <div class="frow"><label class="lbl">Emergency Phone</label><input class="inp" id="kyc-emergency-phone" placeholder="+91 98765 43210"/></div>
+          <div class="frow"><label class="lbl">Relationship</label><input class="inp" id="kyc-emergency-rel" placeholder="Father / Spouse etc."/></div>
+          <div class="frow" style="grid-column:1/-1"><label class="lbl">Permanent Address</label><textarea class="inp" id="kyc-address" rows="2" placeholder="Full address"></textarea></div>
+        </div>
+        <div style="margin-top:12px;display:flex;justify-content:flex-end;">
+          <button class="btn bp" onclick="saveKYC()">Save KYC Details</button>
+        </div>
+      </div>
+      <div id="ob-tab-docs" class="ob-tab-content">
+        <div id="ob-docs-list" style="margin-top:12px;"></div>
+        <div style="margin-top:8px;font-size:12px;color:var(--text3);">Documents generated for this candidate appear here automatically.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-templates">
       <div class="ph">
         <div class="ph-left"><h1>Templates</h1><p>Standard communication by stage</p></div>
         <div class="ph-actions">
@@ -1235,6 +1296,7 @@ function showPage(page){
   else if(page==='jd-library')renderJDLibrary();
   else if(page==='assignments')renderAssignments();
   else if(page==='templates')renderTemplates();
+  else if(page==='onboarding')renderOnboarding();
 }
 
 document.addEventListener('click', function(e){
@@ -1526,6 +1588,218 @@ function renderAssignments(){
     frag.appendChild(groupDiv);
   });
   container.appendChild(frag);
+}
+
+var ALL_ONBOARDING = [];
+
+async function renderOnboarding(){
+  var list = document.getElementById('onboarding-list');
+  list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)">Loading...</div>';
+  var res = await db.from('scout_onboarding').select('*, scout_onboarding_checklist(*)').in('status',['pending','in_progress']).order('created_at',{ascending:false});
+  if(res.error){list.innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">Failed to load.</div>';return;}
+  ALL_ONBOARDING = res.data || [];
+  var badge = document.getElementById('nb-onboarding');
+  if(ALL_ONBOARDING.length){badge.textContent=ALL_ONBOARDING.length;badge.style.display='inline-flex';}
+  else{badge.style.display='none';}
+  if(!ALL_ONBOARDING.length){
+    list.innerHTML='<div style="padding:60px;text-align:center;color:var(--text3);font-size:14px;">No active onboarding entries.<br/><span style="font-size:12px;">Created automatically when a candidate reaches Confirmed.</span></div>';
+    return;
+  }
+  var frag = document.createDocumentFragment();
+  var grid = document.createElement('div');
+  grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:4px 0';
+  ALL_ONBOARDING.forEach(function(ob){
+    var c = ALL_CANDIDATES.find(function(x){return x.id===ob.candidate_id;});
+    var name = c?c.full_name:'Unknown';
+    var items = ob.scout_onboarding_checklist||[];
+    var done = items.filter(function(i){return i.completed;}).length;
+    var total = items.length;
+    var pct = total>0?Math.round(done/total*100):0;
+    var card = document.createElement('div');
+    card.className='kcard';
+    card.style.cssText='cursor:pointer;padding:16px;';
+    card.dataset.obid=ob.id;
+    card.addEventListener('click',function(){openOnboarding(this.dataset.obid);});
+    card.innerHTML=
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">'+
+      '<div><div style="font-size:14px;font-weight:700;color:var(--text)">'+esc(name)+'</div>'+
+      '<div style="font-size:12px;color:var(--text3);margin-top:2px;">'+esc(ob.role_title||'')+(ob.department?' \u2022 '+(DEPT_DISPLAY[ob.department]||ob.department):'')+'</div></div>'+
+      '<span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);background:var(--bg3);padding:3px 8px;border-radius:20px;">'+(ob.status==='in_progress'?'In Progress':'Pending')+'</span>'+
+      '</div>'+
+      '<div style="margin-top:10px;">'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:11px;color:var(--text3)">'+done+' / '+total+' steps</span><span style="font-size:11px;color:var(--text3)">'+pct+'%</span></div>'+
+      '<div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:var(--orange);border-radius:2px;"></div></div>'+
+      '</div>'+
+      (ob.joining_date?'<div style="font-size:11px;color:var(--text3);margin-top:8px;">Joining: '+fmtDateShort(ob.joining_date)+'</div>':'');
+    grid.appendChild(card);
+  });
+  frag.appendChild(grid);
+  list.innerHTML='';
+  list.appendChild(frag);
+}
+
+async function openOnboarding(obId){
+  var ob = ALL_ONBOARDING.find(function(x){return x.id===obId;});
+  if(!ob){var r=await db.from('scout_onboarding').select('*, scout_onboarding_checklist(*)').eq('id',obId).single();ob=r.data;}
+  if(!ob)return;
+  var c = ALL_CANDIDATES.find(function(x){return x.id===ob.candidate_id;});
+  document.getElementById('ob-id').value=obId;
+  document.getElementById('ob-name').textContent=c?c.full_name:'Candidate';
+  document.getElementById('ob-role').textContent=(ob.role_title||'')+(ob.department?' \u2022 '+(DEPT_DISPLAY[ob.department]||ob.department):'');
+  switchObTab('checklist');
+  renderObChecklist(ob);
+  var kycRes=await db.from('employee_kyc').select('*').eq('candidate_id',ob.candidate_id).maybeSingle();
+  if(kycRes.data){
+    var k=kycRes.data;
+    ['aadhaar','pan','bank','acc','ifsc','emergency-name','emergency-phone','emergency-rel'].forEach(function(f){
+      var el=document.getElementById('kyc-'+f);
+      var key=f.replace(/-([a-z])/g,function(m,l){return l.toUpperCase();});
+      var dbKey={'aadhaar':'aadhaar_number','pan':'pan_number','bank':'bank_name','acc':'account_number','ifsc':'ifsc_code','emergencyName':'emergency_contact_name','emergencyPhone':'emergency_contact_phone','emergencyRel':'emergency_contact_relation'}[key]||key;
+      if(el)el.value=k[dbKey]||'';
+    });
+    if(k.date_of_birth){document.getElementById('kyc-dob').value=k.date_of_birth;document.getElementById('kyc-dob-display').value=fmtDateShort(k.date_of_birth);}
+    var addrEl=document.getElementById('kyc-address');if(addrEl)addrEl.value=k.permanent_address||'';
+  } else {
+    ['aadhaar','pan','bank','acc','ifsc','emergency-name','emergency-phone','emergency-rel'].forEach(function(f){var el=document.getElementById('kyc-'+f);if(el)el.value='';});
+    document.getElementById('kyc-dob').value='';document.getElementById('kyc-dob-display').value='';document.getElementById('kyc-address').value='';
+  }
+  var docsRes=await db.from('employee_documents').select('*').eq('candidate_id',ob.candidate_id).order('created_at',{ascending:false});
+  var docsEl=document.getElementById('ob-docs-list');
+  if(docsRes.data&&docsRes.data.length){
+    var dhtml='';
+    docsRes.data.forEach(function(d){
+      dhtml+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;margin-bottom:6px;">'+
+        '<div><div style="font-size:13px;font-weight:600;color:var(--text);text-transform:capitalize">'+esc((d.document_type||'').replace(/_/g,' '))+'</div>'+
+        '<div style="font-size:11px;color:var(--text3);margin-top:2px;">'+new Date(d.generated_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})+'</div></div>'+
+        '<span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);background:var(--bg3);padding:3px 8px;border-radius:20px;">'+esc(d.status)+'</span></div>';
+    });
+    docsEl.innerHTML=dhtml;
+  } else {
+    docsEl.innerHTML='<div style="font-size:13px;color:var(--text3);padding:16px 0;">No documents yet.</div>';
+  }
+  openM('m-onboarding');
+}
+
+function renderObChecklist(ob){
+  var order=['drive_folder','tool_access','offer_communicated','whatsapp_added','payroll_setup','kyc_collected','bank_details','appointment_signed','system_access','role_briefing','first_task'];
+  var items=(ob.scout_onboarding_checklist||[]).sort(function(a,b){return order.indexOf(a.step_key)-order.indexOf(b.step_key);});
+  var container=document.getElementById('ob-checklist-items');
+  container.innerHTML='';
+  items.forEach(function(item){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;cursor:pointer;opacity:'+(item.completed?'0.6':'1');
+    row.dataset.obid=ob.id;row.dataset.iid=item.id;row.dataset.checked=item.completed?'true':'false';
+    row.addEventListener('click',function(e){
+      if(e.target.tagName==='BUTTON'||e.target.tagName==='A')return;
+      toggleChecklistItem(this.dataset.obid,this.dataset.iid,this.dataset.checked==='true');
+    });
+    var checkDiv=document.createElement('div');
+    checkDiv.style.cssText='width:18px;height:18px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px solid '+(item.completed?'var(--orange)':'var(--bdr)')+';background:'+(item.completed?'var(--orange)':'transparent');
+    if(item.completed)checkDiv.innerHTML='<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    var label=document.createElement('span');
+    label.style.cssText='font-size:13px;color:var(--text);'+(item.completed?'text-decoration:line-through':'');
+    label.textContent=item.label;
+    row.appendChild(checkDiv);
+    row.appendChild(label);
+    if(item.step_key==='drive_folder'&&!item.completed){
+      var btn=document.createElement('button');
+      btn.className='btn bg2x bxs';btn.style.cssText='margin-left:auto;font-size:11px;';btn.textContent='Create folder';
+      btn.dataset.obid=ob.id;btn.dataset.cid=ob.candidate_id;
+      btn.addEventListener('click',function(e){e.stopPropagation();createDriveFolderForOnboarding(this.dataset.obid,this.dataset.cid);});
+      row.appendChild(btn);
+    }
+    if(item.step_key==='tool_access'&&!item.completed){
+      var link=document.createElement('a');
+      link.href='https://chef.buttertoast.co';link.target='_blank';link.className='btn bg2x bxs';link.style.cssText='margin-left:auto;font-size:11px;';link.textContent='Open Chef';
+      link.addEventListener('click',function(e){e.stopPropagation();});
+      row.appendChild(link);
+    }
+    container.appendChild(row);
+  });
+  var allDone=items.length>0&&items.every(function(i){return i.completed;});
+  document.getElementById('ob-complete-btn').style.display=allDone?'inline-flex':'none';
+}
+
+async function toggleChecklistItem(obId,itemId,currentState){
+  var newState=!currentState;
+  var now=new Date().toISOString();
+  var updates={completed:newState};
+  if(newState){updates.completed_at=now;updates.completed_by=ME.id;}
+  else{updates.completed_at=null;updates.completed_by=null;}
+  await db.from('scout_onboarding_checklist').update(updates).eq('id',itemId);
+  var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
+  if(ob){
+    if(newState&&ob.status==='pending'){
+      await db.from('scout_onboarding').update({status:'in_progress',started_at:now}).eq('id',obId);
+      ob.status='in_progress';ob.started_at=now;
+    }
+    if(ob.scout_onboarding_checklist){
+      var item=ob.scout_onboarding_checklist.find(function(x){return x.id===itemId;});
+      if(item){item.completed=newState;item.completed_at=newState?now:null;}
+    }
+    renderObChecklist(ob);
+  }
+  renderOnboarding();
+}
+
+async function saveKYC(){
+  var obId=document.getElementById('ob-id').value;
+  var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
+  if(!ob){toast('Onboarding entry not found.','fail');return;}
+  var payload={
+    candidate_id:ob.candidate_id,
+    aadhaar_number:document.getElementById('kyc-aadhaar').value.trim()||null,
+    pan_number:document.getElementById('kyc-pan').value.trim()||null,
+    bank_name:document.getElementById('kyc-bank').value.trim()||null,
+    account_number:document.getElementById('kyc-acc').value.trim()||null,
+    ifsc_code:document.getElementById('kyc-ifsc').value.trim()||null,
+    date_of_birth:document.getElementById('kyc-dob').value||null,
+    emergency_contact_name:document.getElementById('kyc-emergency-name').value.trim()||null,
+    emergency_contact_phone:document.getElementById('kyc-emergency-phone').value.trim()||null,
+    emergency_contact_relation:document.getElementById('kyc-emergency-rel').value.trim()||null,
+    permanent_address:document.getElementById('kyc-address').value.trim()||null,
+    updated_at:new Date().toISOString()
+  };
+  var existing=await db.from('employee_kyc').select('id').eq('candidate_id',ob.candidate_id).maybeSingle();
+  var r=existing.data?await db.from('employee_kyc').update(payload).eq('id',existing.data.id):await db.from('employee_kyc').insert(payload);
+  if(r.error){toast('Failed to save KYC.','fail');return;}
+  toast('KYC details saved.');
+}
+
+async function createDriveFolderForOnboarding(obId,candidateId){
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  if(!c){toast('Candidate not found.','fail');return;}
+  var r=await driveCall({action:'create_folder',folderName:c.full_name+' - Onboarding',parentFolder:'Employees'});
+  if(r&&r.folderId){
+    await db.from('scout_onboarding').update({drive_folder_url:r.folderLink||''}).eq('id',obId);
+    var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
+    if(ob&&ob.scout_onboarding_checklist){
+      var step=ob.scout_onboarding_checklist.find(function(s){return s.step_key==='drive_folder';});
+      if(step&&!step.completed)toggleChecklistItem(obId,step.id,false);
+    }
+    toast('Drive folder created.');
+  } else {
+    toast('Drive folder creation failed.','fail');
+  }
+}
+
+async function markOnboardingComplete(){
+  var obId=document.getElementById('ob-id').value;
+  if(!confirm('Mark this onboarding as complete? This will open the employee creation flow.'))return;
+  var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
+  if(!ob)return;
+  await db.from('scout_onboarding').update({status:'complete',completed_at:new Date().toISOString()}).eq('id',obId);
+  closeM('m-onboarding');
+  openConvertModal(ob.candidate_id);
+  toast('Onboarding complete. Finish creating the employee account.');
+  renderOnboarding();
+}
+
+function switchObTab(tab){
+  document.querySelectorAll('.ob-tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tab);});
+  document.querySelectorAll('.ob-tab-content').forEach(function(c){c.style.display='none';});
+  var el=document.getElementById('ob-tab-'+tab);
+  if(el)el.style.display='block';
 }
 
 function renderTemplates(){
