@@ -854,34 +854,31 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 
 <!-- OFFER LETTER MODAL -->
 <div class="mbg mbg-c" id="m-offer">
-  <div class="modal" style="max-width:560px;">
+  <div class="modal" style="max-width:480px;">
     <h2>Generate offer letter</h2>
-    <p class="msub">Fill in the details to generate the offer letter PDF.</p>
+    <p class="msub">Downloads as HTML. Open in browser and print to PDF.</p>
     <input type="hidden" id="offer-cand-id"/>
     <div class="fsec">
-      <h4>Compensation</h4>
-      <div class="frow"><label class="lbl">CTC / Stipend</label><input class="inp" id="offer-ctc" placeholder="e.g. ₹4,80,000 per annum or ₹15,000/month stipend"/></div>
-    </div>
-    <div class="fsec">
-      <h4>Terms</h4>
-      <div class="fgrid">
-        <div class="frow"><label class="lbl">Joining date</label><input class="inp" id="offer-joining" type="date"/></div>
-        <div class="frow"><label class="lbl">Probation (months)</label><input class="inp" id="offer-probation" type="number" value="3"/></div>
+      <div class="frow"><label class="lbl">CTC / Stipend *</label><input class="inp" id="offer-ctc" placeholder="e.g. 4,80,000 per annum"/></div>
+      <div class="frow"><label class="lbl">Joining Date *</label>
+        <div style="position:relative;width:100%">
+          <input type="text" class="inp" id="offer-joining-display" readonly placeholder="Select date" style="cursor:pointer"/>
+          <input type="date" id="offer-joining" onchange="document.getElementById('offer-joining-display').value=fmtDateShort(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
+        </div>
       </div>
-      <div class="frow"><label class="lbl">Notice period (days)</label><input class="inp" id="offer-notice" type="number" value="30"/></div>
-    </div>
-    <div class="fsec">
-      <h4>Signatory</h4>
-      <div class="fgrid">
-        <div class="frow"><label class="lbl">Name</label><input class="inp" id="offer-sig-name" value="Aakash Rathi"/></div>
-        <div class="frow"><label class="lbl">Designation</label><input class="inp" id="offer-sig-desig" value="Founder"/></div>
+      <div class="frow"><label class="lbl">Signatory</label>
+        <select class="inp" id="offer-sig-key">
+          <option value="aakash">Aakash Rathi, Founder</option>
+          <option value="niki">Niki A. Rathi, Director</option>
+        </select>
       </div>
     </div>
     <div class="mf">
       <button class="btn bg2x" onclick="closeM('m-offer')">Cancel</button>
-      <button class="btn bp" id="btn-gen-offer" onclick="generateOfferLetter()"><span class="spin" id="offer-spin" style="display:none"></span>Generate &amp; save to Drive</button>
+      <button class="btn bp" id="btn-gen-offer" onclick="generateOfferLetter()"><span class="spin" id="offer-spin" style="display:none"></span>Generate &amp; Download</button>
     </div>
   </div>
+</div>
 </div>
 
 <!-- CONVERT TO EMPLOYEE MODAL -->
@@ -1129,7 +1126,6 @@ var STAGES = [
   {key:'interview',label:'Interview'},
   {key:'assignment',label:'Assignment'},
   {key:'offer',label:'Offer'},
-  {key:'offer_sent',label:'Offer Sent'},
   {key:'confirmed',label:'Confirmed'},
   {key:'hired',label:'Hired'},
   {key:'rejected',label:'Rejected'},
@@ -1747,7 +1743,8 @@ async function saveKYC(){
   var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
   if(!ob){toast('Onboarding entry not found.','fail');return;}
   var payload={
-    candidate_id:ob.candidate_id,
+    candidate_id:ob.candidate_id||null,
+    profile_id:ob.employee_id||null,
     aadhaar_number:document.getElementById('kyc-aadhaar').value.trim()||null,
     pan_number:document.getElementById('kyc-pan').value.trim()||null,
     bank_name:document.getElementById('kyc-bank').value.trim()||null,
@@ -1793,6 +1790,19 @@ async function markOnboardingComplete(){
   openConvertModal(ob.candidate_id);
   toast('Onboarding complete. Finish creating the employee account.');
   renderOnboarding();
+}
+
+async function onConvertEmployeeSuccess(employeeId,candidateId){
+  var ob=ALL_ONBOARDING.find(function(x){return x.candidate_id===candidateId;});
+  if(ob&&ob.drive_folder_url&&employeeId){
+    await db.from('employee_profiles').update({drive_folder_url:ob.drive_folder_url}).eq('id',employeeId);
+  }
+  if(employeeId&&candidateId){
+    var kyc=await db.from('employee_kyc').select('id,profile_id').eq('candidate_id',candidateId).maybeSingle();
+    if(kyc.data&&!kyc.data.profile_id){
+      await db.from('employee_kyc').update({profile_id:employeeId}).eq('id',kyc.data.id);
+    }
+  }
 }
 
 function switchObTab(tab){
@@ -1923,15 +1933,47 @@ function openReasonModal(id,stage){
   openM('m-reason');
 }
 
+async function createOnboardingEntry(candidateId){
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  if(!c)return;
+  var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
+  var existing=await db.from('scout_onboarding').select('id').eq('candidate_id',candidateId).maybeSingle();
+  if(existing.data)return;
+  var now=new Date().toISOString();
+  var res=await db.from('scout_onboarding').insert({
+    candidate_id:candidateId,status:'pending',
+    role_title:role?role.title:'',department:role?role.department:'',
+    employment_type:role?role.employment_type:'permanent',created_at:now
+  }).select().single();
+  if(res.data&&res.data.id){
+    var steps=[
+      {step_key:'drive_folder',label:'Drive folder created'},
+      {step_key:'tool_access',label:'Tool access requested in Chef'},
+      {step_key:'offer_communicated',label:'Offer communicated to candidate'},
+      {step_key:'whatsapp_added',label:'Added to WhatsApp and team comms'},
+      {step_key:'payroll_setup',label:'Payroll set up'},
+      {step_key:'kyc_collected',label:'KYC documents collected'},
+      {step_key:'bank_details',label:'Bank details captured'},
+      {step_key:'appointment_signed',label:'Appointment letter signed'},
+      {step_key:'system_access',label:'System access confirmed'},
+      {step_key:'role_briefing',label:'Role briefing done'},
+      {step_key:'first_task',label:'First task assigned'}
+    ];
+    await db.from('scout_onboarding_checklist').insert(steps.map(function(s){return{onboarding_id:res.data.id,step_key:s.step_key,label:s.label,completed:false};}));
+  }
+}
+
 async function confirmMoveStage(candidateId,stage,reason){
   var now=new Date().toISOString();
   var updates={stage:stage};
   if(reason)updates.rejection_reason=reason;
   if(stage==='rejected'||stage==='withdrew')updates.closed_at=now;
+  if(stage==='confirmed')updates.confirmed_at=now;
   var r=await db.from('scout_candidates').update(updates).eq('id',candidateId);
   if(r.error){toast('Failed to update stage.','fail');return;}
   var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
-  if(c){c.stage=stage;if(reason)c.rejection_reason=reason;if(updates.closed_at)c.closed_at=now;}
+  if(c){c.stage=stage;if(reason)c.rejection_reason=reason;if(updates.closed_at)c.closed_at=now;if(updates.confirmed_at)c.confirmed_at=now;}
+  if(stage==='confirmed')createOnboardingEntry(candidateId);
   toast('Stage updated to '+stageLabel(stage));
   closeM('m-reason');
   openCandidate(candidateId);
@@ -2285,31 +2327,27 @@ async function generateOfferLetter(){
   var c=ALL_CANDIDATES.find(function(x){return x.id===candId;});
   if(!c){toast('Candidate not found.','fail');return;}
   var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
-
   var ctc=document.getElementById('offer-ctc').value.trim();
   var joining=document.getElementById('offer-joining').value;
-  var probation=document.getElementById('offer-probation').value;
-  var notice=document.getElementById('offer-notice').value;
-  var sigName=document.getElementById('offer-sig-name').value.trim();
-  var sigDesig=document.getElementById('offer-sig-desig').value.trim();
+  var sigKey=document.getElementById('offer-sig-key').value;
+  var sigName=sigKey==='niki'?'Niki A. Rathi':'Aakash Rathi';
+  var sigDesig=sigKey==='niki'?'Director':'Founder';
 
   if(!ctc||!joining){toast('CTC and joining date are required.','fail');return;}
 
   btn.disabled=true; spin.style.display='inline-block';
 
-  // Generate HTML content for the letter
-  var letterHtml = generateOfferLetterHTML({
-    candidateName: c.full_name,
-    roleTitle: role?role.title:'',
-    department: role?(DEPT_DISPLAY[role.department]||role.department):'',
-    employmentType: role?role.employment_type:'permanent',
-    joiningDate: fmt(joining),
-    ctc: ctc,
-    probationMonths: probation,
-    noticeDays: notice,
-    signatoryName: sigName,
-    signatoryDesignation: sigDesig,
-    generatedDate: new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})
+  var letterHtml=generateOfferLetterHTML({
+    candidateName:c.full_name,
+    roleTitle:role?role.title:'',
+    department:role?(DEPT_DISPLAY[role.department]||role.department):'',
+    employmentType:role?role.employment_type:'permanent',
+    joiningDate:fmtDateShort(joining),
+    ctc:ctc,
+    signatoryName:sigName,
+    signatoryDesignation:sigDesig,
+    signatoryKey:sigKey,
+    generatedDate:new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})
   });
 
   // Convert to base64 for upload
@@ -2325,48 +2363,50 @@ async function generateOfferLetter(){
     if(dr&&dr.fileLink) driveLink=dr.fileLink;
   }
 
-  // Save to scout_offers
-  var offerPayload={candidate_id:candId,role_id:c.role_id,ctc:ctc,joining_date:joining,probation_months:parseInt(probation),notice_period_days:parseInt(notice),signatory_name:sigName,signatory_designation:sigDesig,status:'sent'};
-  if(driveLink)offerPayload.offer_letter_drive_link=driveLink;
-  await db.from('scout_offers').insert(offerPayload);
-
-  // Move stage to offer_sent
-  await db.from('scout_candidates').update({stage:'offer_sent'}).eq('id',candId);
-  var cnd=ALL_CANDIDATES.find(function(x){return x.id===candId;});
-  if(cnd)cnd.stage='offer_sent';
-
+  await db.from('employee_documents').insert({
+    candidate_id:candId,
+    document_type:'offer_letter',
+    version:1,status:'generated',
+    file_url:driveLink||null,
+    is_current:true,
+    metadata:{ctc:ctc,joining_date:joining,signatory_name:sigName,signatory_designation:sigDesig,role_title:role?role.title:''},
+    generated_at:new Date().toISOString()
+  });
   btn.disabled=false; spin.style.display='none';
   closeM('m-offer');
-
-  // Download locally
-  downloadHTML(letterHtml, fileName);
-  toast(driveLink?'Offer letter saved to Drive and downloaded.':'Offer letter downloaded. Drive save skipped (no folder).');
+  downloadHTML(letterHtml,fileName);
+  toast(driveLink?'Offer letter saved to Drive and downloaded.':'Offer letter downloaded. Open in browser, print to PDF.');
   renderDashboard();
 }
 
+function fmtDateShort(d){if(!d)return '';var dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});}
+var LH_URL='https://ferlauhakdbfpwfapxxw.supabase.co/storage/v1/object/public/assets/branding/letterhead.pdf';
+var SIGN_AAKASH='https://ferlauhakdbfpwfapxxw.supabase.co/storage/v1/object/public/assets/signatures/aakash_sign.jpg';
+var SIGN_NIKI='https://ferlauhakdbfpwfapxxw.supabase.co/storage/v1/object/public/assets/signatures/niki_sign.png';
 function generateOfferLetterHTML(data){
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>body{font-family:Georgia,serif;font-size:13px;line-height:1.8;color:#111;max-width:750px;margin:40px auto;padding:0 40px;}h1{font-size:18px;margin-bottom:4px;}h3{font-size:14px;margin-bottom:6px;margin-top:24px;}p{margin-bottom:12px;}table{width:100%;border-collapse:collapse;margin:16px 0;}td{padding:8px 12px;border:1px solid #ddd;font-size:13px;}.header{border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:24px;}.footer{margin-top:60px;border-top:1px solid #ddd;padding-top:20px;}</style></head><body>'+
-  '<div class="header"><h1>Buttertoast</h1><p style="color:#666;font-size:12px;">Date: '+data.generatedDate+'</p></div>'+
+  var signImg=data.signatoryKey==='niki'?SIGN_NIKI:SIGN_AAKASH;
+  var ref='BT/OL/'+new Date().getFullYear()+'/'+esc(data.candidateName.split(' ')[0].toUpperCase());
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"/>'+
+  '<style>@page{size:A4;margin:0;}*{box-sizing:border-box;}body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-size:12px;line-height:1.8;color:#1a1a1a;background:#fff;}.page{width:210mm;min-height:297mm;position:relative;background:url('+JSON.stringify(LH_URL)+') no-repeat top left/210mm auto;background-color:#fff;}.content{position:absolute;top:38mm;left:20mm;right:20mm;bottom:20mm;}.meta{font-size:11px;color:#555;margin-bottom:18px;}.meta div{margin-bottom:2px;}h2{font-size:13px;font-weight:700;margin:0 0 16px;text-decoration:underline;text-underline-offset:3px;}p{margin:0 0 12px;font-size:12px;}strong{font-weight:600;}table{width:100%;border-collapse:collapse;margin:12px 0 16px;}td{padding:7px 10px;border:1px solid #ddd;font-size:11.5px;vertical-align:top;}td:first-child{width:40%;font-weight:600;background:#f9f9f9;}.sig-block{margin-top:36px;}.sig-img{height:44px;display:block;margin-bottom:2px;}.sig-name{font-weight:700;font-size:12px;}.sig-desig{font-size:11px;color:#555;}</style></head><body>'+
+  '<div class="page"><div class="content">'+
+  '<div class="meta"><div>'+esc(data.generatedDate)+'</div><div>Ref: '+ref+'</div></div>'+
   '<p>Dear <strong>'+esc(data.candidateName)+'</strong>,</p>'+
-  '<p>We are pleased to extend this offer of employment for the position of <strong>'+esc(data.roleTitle)+'</strong> at Buttertoast. We believe your skills and experience will be a valuable addition to our team.</p>'+
-  '<h3>Terms of Employment</h3>'+
-  '<table><tr><td><strong>Position</strong></td><td>'+esc(data.roleTitle)+'</td></tr>'+
-  (data.department?'<tr><td><strong>Department</strong></td><td>'+esc(data.department)+'</td></tr>':'')+
-  '<tr><td><strong>Employment Type</strong></td><td>'+esc(data.employmentType)+'</td></tr>'+
-  '<tr><td><strong>Date of Joining</strong></td><td>'+esc(data.joiningDate)+'</td></tr>'+
-  '<tr><td><strong>Compensation</strong></td><td>'+esc(data.ctc)+'</td></tr>'+
-  '<tr><td><strong>Probation Period</strong></td><td>'+esc(data.probationMonths)+' months</td></tr>'+
-  '<tr><td><strong>Notice Period</strong></td><td>'+esc(data.noticeDays)+' days</td></tr></table>'+
-  '<p>This offer is contingent upon successful completion of any applicable background verification and the submission of required documents prior to or on your joining date.</p>'+
-  '<p>Please sign and return a copy of this letter as your formal acceptance of this offer. By signing, you confirm your agreement with the terms stated herein.</p>'+
-  '<p>We look forward to welcoming you to the Buttertoast team.</p>'+
-  '<div class="footer">'+
-  '<p>Warm regards,</p>'+
-  '<p><strong>'+esc(data.signatoryName)+'</strong><br/>'+esc(data.signatoryDesignation)+'<br/>Buttertoast</p>'+
-  '<br/><br/>'+
-  '<p>Accepted by: _______________________________&nbsp;&nbsp;&nbsp;&nbsp; Date: _______________</p>'+
-  '<p>'+esc(data.candidateName)+'</p>'+
-  '</div></body></html>';
+  '<h2>Offer of Employment</h2>'+
+  '<p>We are pleased to offer you the position of <strong>'+esc(data.roleTitle)+'</strong> at Butter Toast. We look forward to having you join our team.</p>'+
+  '<table><tr><td>Position</td><td>'+esc(data.roleTitle)+'</td></tr>'+
+  (data.department?'<tr><td>Department</td><td>'+esc(data.department)+'</td></tr>':'')+
+  '<tr><td>Employment Type</td><td style="text-transform:capitalize">'+esc(data.employmentType)+'</td></tr>'+
+  '<tr><td>Date of Joining</td><td>'+esc(data.joiningDate)+'</td></tr>'+
+  '<tr><td>Compensation</td><td>'+esc(data.ctc)+'</td></tr>'+
+  '</table>'+
+  '<p>This offer is subject to verification of your documents. Formal terms including notice period and other conditions will be outlined in your appointment letter on your date of joining.</p>'+
+  '<p>Kindly confirm your acceptance of this offer at the earliest.</p>'+
+  '<p>We are excited to welcome you to the Butter Toast family.</p>'+
+  '<div class="sig-block"><p style="margin-bottom:6px;">Warm regards,</p>'+
+  '<img class="sig-img" src="'+signImg+'" alt=""/>'+
+  '<div class="sig-name">'+esc(data.signatoryName)+'</div>'+
+  '<div class="sig-desig">'+esc(data.signatoryDesignation)+', Butter Toast</div>'+
+  '</div></div></div></body></html>';
 }
 
 function downloadHTML(html, fileName){
@@ -2460,6 +2500,7 @@ async function doConvert(){
       bankName: document.getElementById('conv-bank').value.trim()||null,
       accountNumber: document.getElementById('conv-acc').value.trim()||null,
       ifscCode: document.getElementById('conv-ifsc').value.trim()||null,
+      driveFolderUrl:(function(){var ob=ALL_ONBOARDING.find(function(x){return x.candidate_id===candId;});return ob?ob.drive_folder_url||null:null;})(),
       driveFolderId: driveFolderData?driveFolderData.folderId:null,
       driveFolderLink: driveFolderData?driveFolderData.folderLink:null,
       companyDocsFolderId: driveFolderData?driveFolderData.companyDocsFolderId:null,
