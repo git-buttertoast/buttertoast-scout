@@ -1933,8 +1933,13 @@ function openCandidate(id){
   html+='<div class="dactions">';
   html+='<button class="btn bg2x bsm" onclick="openEditCandidate(\''+id+'\')">Edit details</button>';
   html+='<button class="btn bg2x bsm" onclick="addToContacts(\''+id+'\')">Save contact</button>';
-  if(c.stage==='offer'||c.stage==='offer_sent'||c.stage==='confirmed'){
-    html+='<button class="btn bgreen bsm" onclick="openOfferModal(\''+id+'\')">Generate offer letter</button>';
+  if(c.stage==='offer'){
+    var isIntern=(role&&role.employment_type==='intern');
+    if(isIntern){
+      html+='<button class="btn bgreen bsm" data-cid2="'+id+'" onclick="openInternshipOfferModal(this.dataset.cid2)">Generate internship offer</button>';
+    } else {
+      html+='<button class="btn bgreen bsm" data-cid2="'+id+'" onclick="openOfferModal(this.dataset.cid2)">Generate offer letter</button>';
+    }
   }
   if(c.stage==='confirmed'||c.stage==='hired'){
     html+='<button class="btn bp bsm" onclick="openConvertModal(\''+id+'\')">Convert to employee</button>';
