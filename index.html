@@ -1849,6 +1849,10 @@ function switchObTab(tab){
   document.querySelectorAll('.ob-tab-content').forEach(function(c){c.style.display='none';});
   var el=document.getElementById('ob-tab-'+tab);
   if(el)el.style.display='block';
+  if(tab==='docs'){
+    var obId=document.getElementById('ob-id').value;
+    if(obId)loadObDocs(obId);
+  }
 }
 
 function renderTemplates(){
@@ -1925,6 +1929,7 @@ function openCandidate(id){
 
   // Actions
   html+='<div class="dsec"><div class="dsec-hd">Actions</div>';
+  html+='<div id="d-async-actions" style="margin-bottom:8px;"></div>';
   html+='<div class="dactions">';
   html+='<button class="btn bg2x bsm" onclick="openEditCandidate(\''+id+'\')">Edit details</button>';
   html+='<button class="btn bg2x bsm" onclick="addToContacts(\''+id+'\')">Save contact</button>';
@@ -1943,6 +1948,7 @@ function openCandidate(id){
 
   document.getElementById('candidate-body').innerHTML=html;
   openM('m-candidate');
+  loadCandidateAsyncData(id);
 }
 
 async function moveStage(candidateId,stage){
@@ -2379,6 +2385,179 @@ async function saveTemplate(){
 }
 
 // ── OFFER LETTER ──────────────────────────────────────────────────────────────
+// ── Internship offer letter ─────────────────────────────────────────────────
+function openInternshipOfferModal(candidateId){
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  var role=c?ALL_ROLES.find(function(x){return x.id===c.role_id;}):null;
+  document.getElementById('intern-offer-cand-id').value=candidateId;
+  document.getElementById('intern-offer-joining').value=new Date().toISOString().split('T')[0];
+  document.getElementById('intern-offer-joining-display').value=fmtDateShort(new Date().toISOString().split('T')[0]);
+  document.getElementById('intern-offer-end').value='';
+  document.getElementById('intern-offer-end-display').value='';
+  var sub=document.getElementById('intern-offer-role-sub');
+  if(sub)sub.textContent=role?role.title+(role.department?' \u00b7 '+(DEPT_DISPLAY[role.department]||role.department):''):'';
+  closeM('m-candidate');
+  openM('m-intern-offer');
+}
+
+async function generateInternshipOffer(){
+  var btn=document.getElementById('btn-gen-intern-offer');
+  var spin=document.getElementById('intern-offer-spin');
+  var candId=document.getElementById('intern-offer-cand-id').value;
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candId;});
+  if(!c){toast('Candidate not found.','fail');return;}
+  var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
+  var stipend=document.getElementById('intern-offer-stipend').value.trim();
+  var joining=document.getElementById('intern-offer-joining').value;
+  var endDate=document.getElementById('intern-offer-end').value;
+  var sigKey=document.getElementById('intern-offer-sig-key').value;
+  var sigName=sigKey==='niki'?'Niki A. Rathi':'Aakash Rathi';
+  var sigDesig=sigKey==='niki'?'Director':'Founder';
+  if(!stipend||!joining||!endDate){toast('Stipend, joining date and end date are required.','fail');return;}
+  btn.disabled=true; spin.style.display='inline-block';
+  var letterHtml=generateInternshipOfferHTML({
+    candidateName:c.full_name,
+    roleTitle:role?role.title:'',
+    department:role?(DEPT_DISPLAY[role.department]||role.department):'',
+    joiningDate:fmtDateShort(joining),
+    endDate:fmtDateShort(endDate),
+    stipend:stipend,
+    signatoryName:sigName,
+    signatoryDesignation:sigDesig,
+    signatoryKey:sigKey,
+    generatedDate:new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})
+  });
+  var b64=btoa(unescape(encodeURIComponent(letterHtml)));
+  var fileName='Internship-Offer-'+c.full_name.replace(/\s+/g,'-')+'-'+new Date().toISOString().split('T')[0]+'.html';
+  var driveLink=null;
+  if(c.drive_folder_id){
+    var dr=await driveCall({action:'upload_file',folderId:c.drive_folder_id,fileName:fileName,base64:b64,mimeType:'text/html'});
+    if(dr&&dr.fileLink)driveLink=dr.fileLink;
+  }
+  await db.from('employee_documents').insert({
+    candidate_id:candId,
+    document_type:'internship_offer',
+    version:1,status:'generated',
+    file_url:driveLink||null,
+    is_current:true,
+    metadata:{stipend:stipend,joining_date:joining,end_date:endDate,signatory_name:sigName,role_title:role?role.title:''},
+    generated_at:new Date().toISOString()
+  });
+  btn.disabled=false; spin.style.display='none';
+  closeM('m-intern-offer');
+  downloadHTML(letterHtml,fileName);
+  toast(driveLink?'Internship offer saved to Drive and downloaded.':'Downloaded. Open in browser, print to PDF.');
+  renderDashboard();
+}
+
+function generateInternshipOfferHTML(data){
+  var sigAakash=SIGN_AAKASH;
+  var sigNiki=SIGN_NIKI;
+  var ref='BT/IOL/'+new Date().getFullYear()+'/'+esc(data.candidateName.split(' ')[0].toUpperCase());
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"/>'+
+  '<style>@page{size:A4;margin:0;}*{box-sizing:border-box;}body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-size:12px;line-height:1.8;color:#1a1a1a;background:#fff;}.page{width:210mm;min-height:297mm;position:relative;background:url('+JSON.stringify(LH_URL)+') no-repeat top left/210mm auto;background-color:#fff;}.content{position:absolute;top:38mm;left:20mm;right:20mm;bottom:20mm;}.meta{font-size:11px;color:#555;margin-bottom:18px;}.meta div{margin-bottom:2px;}h2{font-size:13px;font-weight:700;margin:0 0 16px;text-decoration:underline;text-underline-offset:3px;}p{margin:0 0 12px;font-size:12px;}strong{font-weight:600;}table{width:100%;border-collapse:collapse;margin:12px 0 16px;}td{padding:7px 10px;border:1px solid #ddd;font-size:11.5px;vertical-align:top;}td:first-child{width:40%;font-weight:600;background:#f9f9f9;}.sig-row{display:flex;gap:40px;margin-top:36px;}.sig-block{flex:1;}.sig-img{height:42px;display:block;margin-bottom:2px;}.sig-name{font-weight:700;font-size:12px;}.sig-desig{font-size:11px;color:#555;}.accept{margin-top:32px;border-top:1px solid #ccc;padding-top:14px;}.accept-line{display:flex;gap:32px;font-size:11px;color:#444;margin-top:10px;}.sign-line{border-bottom:1px solid #999;width:160px;height:28px;margin-bottom:4px;}</style></head><body>'+
+  '<div class="page"><div class="content">'+
+  '<div class="meta"><div>'+esc(data.generatedDate)+'</div><div>Ref: '+ref+'</div></div>'+
+  '<p>Dear <strong>'+esc(data.candidateName)+'</strong>,</p>'+
+  '<p style="font-style:italic;color:#444;">Good news, '+esc(data.candidateName.split(' ')[0])+' \u2014 you\'re on the menu. As an intern, consider this your trial tasting.</p>'+
+  '<p>We\'re excited to have you join Butter Toast as <strong>'+esc(data.roleTitle)+'</strong>.</p>'+
+  '<table>'+
+  '<tr><td>Role</td><td>'+esc(data.roleTitle)+'</td></tr>'+
+  (data.department?'<tr><td>Department</td><td>'+esc(data.department)+'</td></tr>':'')+
+  '<tr><td>Start Date</td><td>'+esc(data.joiningDate)+'</td></tr>'+
+  '<tr><td>Internship Until</td><td>'+esc(data.endDate)+'</td></tr>'+
+  '<tr><td>Location</td><td>Ahmedabad</td></tr>'+
+  '<tr><td>Monthly Stipend</td><td>INR '+esc(String(data.stipend))+' / Month</td></tr>'+
+  '</table>'+
+  '<p>Over the next few days, we\'ll share everything you need to get started.</p>'+
+  '<p>Until then, take this as your official confirmation: you\'re part of the kitchen now. Let\'s cook some good stuff.</p>'+
+  '<p style="margin-top:14px;">Best,<br/><strong>Team PeopleOps, Butter Toast</strong></p>'+
+  '<div class="sig-row">'+
+    '<div class="sig-block"><img class="sig-img" src="'+sigAakash+'"/><div class="sig-name">Aakash Rathi</div><div class="sig-desig">Founder, Butter Toast</div></div>'+
+    '<div class="sig-block"><img class="sig-img" src="'+sigNiki+'"/><div class="sig-name">Niki A. Rathi</div><div class="sig-desig">Proprietor, HATCHX INDIA</div></div>'+
+  '</div>'+
+  '<div class="accept">'+
+    '<p style="font-size:11px;color:#555;">Acknowledgement by the Candidate:</p>'+
+    '<p style="font-size:11.5px;">I, <strong>'+esc(data.candidateName)+'</strong>, accept the terms of this internship offer.</p>'+
+    '<div class="accept-line">'+
+      '<div><div class="sign-line"></div><div>Signature</div></div>'+
+      '<div><div class="sign-line"></div><div>Date</div></div>'+
+      '<div><div class="sign-line"></div><div>Place</div></div>'+
+    '</div>'+
+  '</div>'+
+  '</div></div></body></html>';
+}
+
+// ── Candidate async data (offer status + onboarding link) ───────────────────
+async function loadCandidateAsyncData(candidateId){
+  var actionsEl=document.getElementById('d-async-actions');
+  if(!actionsEl)return;
+  var html='';
+  var docsRes=await db.from('employee_documents').select('id,document_type,generated_at,file_url')
+    .eq('candidate_id',candidateId).in('document_type',['offer_letter','internship_offer']);
+  if(docsRes.data&&docsRes.data.length>0){
+    var doc=docsRes.data[0];
+    var dt=new Date(doc.generated_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+    html+='<div style="font-size:12px;color:var(--green);margin-bottom:6px;display:flex;align-items:center;gap:6px;">'+
+      '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'+
+      'Offer letter generated '+dt+
+      (doc.file_url?' &nbsp;<a href="'+esc(doc.file_url)+'" target="_blank" style="color:var(--green);font-size:11px;">[view]</a>':'')+
+      '</div>';
+  }
+  var obRes=await db.from('scout_onboarding').select('id,status').eq('candidate_id',candidateId).maybeSingle();
+  if(obRes.data){
+    html+='<button class="btn bg2x bsm" data-cid="'+candidateId+'" onclick="openOnboardingForCandidate(this.dataset.cid)">View onboarding &rarr;</button>';
+  }
+  actionsEl.innerHTML=html;
+}
+
+function openOnboardingForCandidate(candidateId){
+  closeM('m-candidate');
+  showPage('onboarding');
+  setTimeout(async function(){
+    var obRes=await db.from('scout_onboarding').select('id').eq('candidate_id',candidateId).maybeSingle();
+    if(obRes.data)openOnboardingModal(obRes.data.id);
+  },400);
+}
+
+// ── ob-tab-docs loader ────────────────────────────────────────────────────────
+async function loadObDocs(obId){
+  var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
+  var container=document.getElementById('ob-docs-list');
+  if(!container)return;
+  container.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0;">Loading...</div>';
+  if(!ob)return;
+  var orFilter='';
+  if(ob.candidate_id&&ob.employee_id)orFilter='candidate_id.eq.'+ob.candidate_id+',profile_id.eq.'+ob.employee_id;
+  else if(ob.candidate_id)orFilter='candidate_id.eq.'+ob.candidate_id;
+  else if(ob.employee_id)orFilter='profile_id.eq.'+ob.employee_id;
+  if(!orFilter){container.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0;">No link to employee or candidate.</div>';return;}
+  var res=await db.from('employee_documents').select('*').or(orFilter).order('created_at',{ascending:false});
+  var docs=res.data||[];
+  var docLabels={offer_letter:'Offer Letter',internship_offer:'Internship Offer',appointment_letter:'Appointment Letter',
+    internship_appointment:'Internship Appointment',freelance_agreement:'Freelance Agreement',
+    appraisal:'Appraisal Letter',probation_confirmation:'Probation Confirmation',
+    salary_revision:'Salary Revision Letter',experience_letter:'Experience Letter',
+    internship_completion:'Internship Completion',relieving_letter:'Relieving Letter',
+    warning_letter:'Warning Letter',other:'Other'};
+  if(!docs.length){
+    container.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0;">No documents yet. Documents generated from Stock will appear here.</div>';
+    return;
+  }
+  var html='<div style="display:flex;flex-direction:column;gap:6px;">';
+  docs.forEach(function(d){
+    var label=d.label||(docLabels[d.document_type]||d.document_type);
+    var dt=new Date(d.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+    html+='<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">'+
+      '<div><div style="font-size:13px;font-weight:600;">'+esc(label)+'</div>'+
+      '<div style="font-size:11px;color:var(--text3);">'+dt+'</div></div>'+
+      (d.file_url?'<a href="'+esc(d.file_url)+'" target="_blank" class="btn bg2x bsm" style="font-size:11px;">View</a>':'')+
+      '</div>';
+  });
+  html+='</div>';
+  container.innerHTML=html;
+}
+
 function openOfferModal(candidateId){
   document.getElementById('offer-cand-id').value=candidateId;
   // Pre-fill joining date with today
