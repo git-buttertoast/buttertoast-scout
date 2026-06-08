@@ -1713,6 +1713,27 @@ async function openOnboarding(obId){
     docsEl.innerHTML='<div style="font-size:13px;color:var(--text3);padding:16px 0;">No documents yet.</div>';
   }
   openM('m-onboarding');
+  // Pre-fill KYC from existing data
+  var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
+  if(ob&&(ob.candidate_id||ob.employee_id)){
+    (async function(){
+      var kycRes=await db.from('employee_kyc').select('*')
+        .eq(ob.candidate_id?'candidate_id':'profile_id',ob.candidate_id||ob.employee_id)
+        .maybeSingle();
+      if(kycRes.data){
+        var k=kycRes.data;
+        var fields={'kyc-aadhaar':'aadhaar_number','kyc-pan':'pan_number',
+          'kyc-bank':'bank_name','kyc-acc':'account_number','kyc-ifsc':'ifsc_code',
+          'kyc-dob':'date_of_birth','kyc-emergency-name':'emergency_contact_name',
+          'kyc-emergency-phone':'emergency_contact_phone','kyc-emergency-rel':'emergency_contact_relation',
+          'kyc-address':'permanent_address'};
+        Object.keys(fields).forEach(function(id){
+          var el=document.getElementById(id);
+          if(el)el.value=k[fields[id]]||'';
+        });
+      }
+    })();
+  }
 }
 
 function renderObChecklist(ob){
@@ -2564,9 +2585,13 @@ async function loadObDocs(obId){
 }
 
 function openOfferModal(candidateId){
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  var role=c?ALL_ROLES.find(function(x){return x.id===c.role_id;}):null;
   document.getElementById('offer-cand-id').value=candidateId;
-  // Pre-fill joining date with today
   document.getElementById('offer-joining').value=new Date().toISOString().split('T')[0];
+  document.getElementById('offer-joining-display').value='';
+  var sub=document.getElementById('offer-role-sub');
+  if(sub)sub.textContent=role?role.title+(role.department?' · '+(DEPT_DISPLAY[role.department]||role.department):''):'';
   closeM('m-candidate');
   openM('m-offer');
 }
@@ -2672,6 +2697,7 @@ function downloadHTML(html, fileName){
 function openConvertModal(candidateId){
   var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
   if(!c)return;
+  if(c.stage==='hired'){toast('This candidate has already been converted to an employee.','fail');return;}
   var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
   document.getElementById('conv-cand-id').value=candidateId;
   document.getElementById('conv-joining').value=new Date().toISOString().split('T')[0];
