@@ -883,6 +883,43 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 </div>
 </div>
 
+<!-- INTERNSHIP OFFER MODAL -->
+<div class="mbg" id="m-intern-offer">
+  <div class="modal" style="max-width:480px;">
+    <h2>Generate internship offer</h2>
+    <p class="msub" id="intern-offer-role-sub" style="font-weight:600;color:var(--text);margin-bottom:2px;"></p>
+    <p class="msub">Downloads as HTML. Open in browser and print to PDF.</p>
+    <input type="hidden" id="intern-offer-cand-id"/>
+    <div class="fsec">
+      <div class="frow"><label class="lbl">Monthly Stipend *</label><input class="inp" id="intern-offer-stipend" type="number" placeholder="e.g. 8000"/></div>
+      <div class="frow"><label class="lbl">Joining Date *</label>
+        <div style="position:relative;width:100%">
+          <input type="text" class="inp" id="intern-offer-joining-display" readonly placeholder="Select date" style="cursor:pointer"/>
+          <input type="date" id="intern-offer-joining" onchange="document.getElementById('intern-offer-joining-display').value=fmtDateShort(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
+        </div>
+      </div>
+      <div class="frow"><label class="lbl">Internship End Date *</label>
+        <div style="position:relative;width:100%">
+          <input type="text" class="inp" id="intern-offer-end-display" readonly placeholder="Select date" style="cursor:pointer"/>
+          <input type="date" id="intern-offer-end" onchange="document.getElementById('intern-offer-end-display').value=fmtDateShort(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
+        </div>
+      </div>
+      <div class="frow"><label class="lbl">Signatory</label>
+        <select class="inp" id="intern-offer-sig-key">
+          <option value="aakash">Aakash Rathi, Founder</option>
+          <option value="niki">Niki A. Rathi, Director</option>
+        </select>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg2x" onclick="closeM('m-intern-offer')">Cancel</button>
+      <button class="btn bp" id="btn-gen-intern-offer" onclick="generateInternshipOffer()">
+        <span class="spin" id="intern-offer-spin" style="display:none"></span>Generate &amp; Download
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- CONVERT TO EMPLOYEE MODAL -->
 <div class="mbg mbg-c" id="m-convert">
   <div class="modal convert-modal">
