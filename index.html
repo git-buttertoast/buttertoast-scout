@@ -3019,6 +3019,8 @@ function fixDateInputs(){
   var inputs=document.querySelectorAll('input[type="date"]:not([data-dfx])');
   inputs.forEach(function(inp){
     if(inp.closest('[data-dfx-wrap]')){inp.setAttribute('data-dfx','1');return;}
+    var st=inp.getAttribute('style')||'';
+    if(st.indexOf('opacity:0')!==-1||st.indexOf('opacity: 0')!==-1){inp.setAttribute('data-dfx','1');return;}
     inp.setAttribute('data-dfx','1');
     var cs=window.getComputedStyle(inp);
     var wrap=document.createElement('div');
