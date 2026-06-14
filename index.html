@@ -1896,6 +1896,13 @@ function openCandidate(id){
   html+='<div class="stage-flow">';
   STAGES.forEach(function(s){
     if(s.key==='rejected')return;
+    if(s.key==='hired'){
+      // Hired is system-only: set automatically when a candidate is converted to
+      // an employee. It is never a manual move target, so render it as a
+      // non-clickable status pill.
+      html+='<button class="stage-btn'+(c.stage===s.key?' current':'')+'" disabled style="opacity:'+(c.stage===s.key?'1':'0.4')+';cursor:default;" title="Set automatically when converted to employee">'+s.label+'</button>';
+      return;
+    }
     html+='<button class="stage-btn'+(c.stage===s.key?' current':'')+'" onclick="moveStage(\''+id+'\',\''+s.key+'\')">'+s.label+'</button>';
   });
   html+='</div>';
@@ -2021,6 +2028,12 @@ async function createOnboardingEntry(candidateId){
 }
 
 async function confirmMoveStage(candidateId,stage,reason){
+  // Hired is system-only — only the convert-to-employee flow may set it.
+  // Block any manual attempt to move a candidate to Hired.
+  if(stage==='hired'){
+    toast('"Hired" is set automatically when you convert the candidate to an employee.','fail');
+    return;
+  }
   var now=new Date().toISOString();
   var updates={stage:stage};
   if(reason)updates.rejection_reason=reason;
