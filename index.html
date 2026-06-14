@@ -623,8 +623,15 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         </div>
       </div>
       <div id="ob-tab-docs" class="ob-tab-content">
+        <div style="margin-top:12px;padding:12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;">Generate document</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn bg2x bsm" id="ob-gen-offer" onclick="cockpitGenerate('offer_letter')">Offer letter</button>
+            <button class="btn bg2x bsm" id="ob-gen-appoint" onclick="cockpitGenerate('appointment_letter')">Appointment letter</button>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px;">Opens a print-ready letter in a new tab. Saved to this candidate automatically.</div>
+        </div>
         <div id="ob-docs-list" style="margin-top:12px;"></div>
-        <div style="margin-top:8px;font-size:12px;color:var(--text3);">Documents generated for this candidate appear here automatically.</div>
       </div>
     </div>
   </div>
@@ -858,7 +865,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 <div class="mbg mbg-c" id="m-offer">
   <div class="modal" style="max-width:480px;">
     <h2>Generate offer letter</h2>
-    <p class="msub">Downloads as HTML. Open in browser and print to PDF.</p>
+    <p class="msub">Opens a print-ready letter in a new tab. Use your browser's Print &rarr; Save as PDF.</p>
     <input type="hidden" id="offer-cand-id"/>
     <div class="fsec">
       <div class="frow"><label class="lbl">CTC / Stipend *</label><input class="inp" id="offer-ctc" placeholder="e.g. 4,80,000 per annum"/></div>
@@ -877,7 +884,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
     </div>
     <div class="mf">
       <button class="btn bg2x" onclick="closeM('m-offer')">Cancel</button>
-      <button class="btn bp" id="btn-gen-offer" onclick="generateOfferLetter()"><span class="spin" id="offer-spin" style="display:none"></span>Generate &amp; Download</button>
+      <button class="btn bp" id="btn-gen-offer" onclick="generateOfferLetter()"><span class="spin" id="offer-spin" style="display:none"></span>Generate offer letter</button>
     </div>
   </div>
 </div>
@@ -1713,27 +1720,6 @@ async function openOnboarding(obId){
     docsEl.innerHTML='<div style="font-size:13px;color:var(--text3);padding:16px 0;">No documents yet.</div>';
   }
   openM('m-onboarding');
-  // Pre-fill KYC from existing data
-  var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
-  if(ob&&(ob.candidate_id||ob.employee_id)){
-    (async function(){
-      var kycRes=await db.from('employee_kyc').select('*')
-        .eq(ob.candidate_id?'candidate_id':'profile_id',ob.candidate_id||ob.employee_id)
-        .maybeSingle();
-      if(kycRes.data){
-        var k=kycRes.data;
-        var fields={'kyc-aadhaar':'aadhaar_number','kyc-pan':'pan_number',
-          'kyc-bank':'bank_name','kyc-acc':'account_number','kyc-ifsc':'ifsc_code',
-          'kyc-dob':'date_of_birth','kyc-emergency-name':'emergency_contact_name',
-          'kyc-emergency-phone':'emergency_contact_phone','kyc-emergency-rel':'emergency_contact_relation',
-          'kyc-address':'permanent_address'};
-        Object.keys(fields).forEach(function(id){
-          var el=document.getElementById(id);
-          if(el)el.value=k[fields[id]]||'';
-        });
-      }
-    })();
-  }
 }
 
 function renderObChecklist(ob){
@@ -2542,7 +2528,7 @@ function openOnboardingForCandidate(candidateId){
   showPage('onboarding');
   setTimeout(async function(){
     var obRes=await db.from('scout_onboarding').select('id').eq('candidate_id',candidateId).maybeSingle();
-    if(obRes.data)openOnboardingModal(obRes.data.id);
+    if(obRes.data)openOnboarding(obRes.data.id);
   },400);
 }
 
@@ -2606,91 +2592,96 @@ async function generateOfferLetter(){
   var ctc=document.getElementById('offer-ctc').value.trim();
   var joining=document.getElementById('offer-joining').value;
   var sigKey=document.getElementById('offer-sig-key').value;
-  var sigName=sigKey==='niki'?'Niki A. Rathi':'Aakash Rathi';
-  var sigDesig=sigKey==='niki'?'Director':'Founder';
 
   if(!ctc||!joining){toast('CTC and joining date are required.','fail');return;}
 
   btn.disabled=true; spin.style.display='inline-block';
-
-  var letterHtml=generateOfferLetterHTML({
-    candidateName:c.full_name,
-    roleTitle:role?role.title:'',
-    department:role?(DEPT_DISPLAY[role.department]||role.department):'',
-    employmentType:role?role.employment_type:'permanent',
-    joiningDate:fmtDateShort(joining),
-    ctc:ctc,
-    signatoryName:sigName,
-    signatoryDesignation:sigDesig,
-    signatoryKey:sigKey,
-    generatedDate:new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})
-  });
-
-  // Convert to base64 for upload
-  var b64 = btoa(unescape(encodeURIComponent(letterHtml)));
-  var fileName = 'Offer Letter - '+c.full_name+' - '+new Date().toISOString().split('T')[0]+'.html';
-
-  // Upload to Drive
-  var folderId = c.drive_folder_id;
-  var driveLink = null;
-
-  if(folderId){
-    var dr = await driveCall({action:'upload_file',folderId:folderId,fileName:fileName,base64:b64,mimeType:'text/html'});
-    if(dr&&dr.fileLink) driveLink=dr.fileLink;
+  try{
+    await generateDocViaStock({
+      document_type:'offer_letter',
+      candidate_id:candId,
+      drive_folder_id:c.drive_folder_id||null,
+      employee_name:c.full_name,
+      role_title:role?role.title:'',
+      department:role?(DEPT_DISPLAY[role.department]||role.department):'',
+      reports_to_name:'',
+      joining_date:joining,
+      effective_date:new Date().toISOString().split('T')[0],
+      probation_ctc:ctc,
+      signatory_key:sigKey
+    });
+    closeM('m-offer');
+    toast('Offer letter generated. Review in the new tab, then print to PDF.');
+    renderDashboard();
+  }catch(e){
+    toast('Failed to generate offer letter.','fail');
+  }finally{
+    btn.disabled=false; spin.style.display='none';
   }
-
-  await db.from('employee_documents').insert({
-    candidate_id:candId,
-    document_type:'offer_letter',
-    version:1,status:'generated',
-    file_url:driveLink||null,
-    is_current:true,
-    metadata:{ctc:ctc,joining_date:joining,signatory_name:sigName,signatory_designation:sigDesig,role_title:role?role.title:''},
-    generated_at:new Date().toISOString()
-  });
-  btn.disabled=false; spin.style.display='none';
-  closeM('m-offer');
-  downloadHTML(letterHtml,fileName);
-  toast(driveLink?'Offer letter saved to Drive and downloaded.':'Offer letter downloaded. Open in browser, print to PDF.');
-  renderDashboard();
 }
 
+// Shared document generator: calls the Stock engine (single source of truth for
+// all Butter Toast documents), then opens the returned HTML in a print window.
+var STOCK_PDF_URL='https://stock.buttertoast.co/api/generate-pdf';
 function fmtDateShort(d){if(!d)return '';var dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});}
+// Legacy asset URLs + downloadHTML, still used by the internship offer generator
+// (not yet migrated to the Stock engine).
 var LH_URL='https://ferlauhakdbfpwfapxxw.supabase.co/storage/v1/object/public/assets/branding/letterhead.pdf';
 var SIGN_AAKASH='https://ferlauhakdbfpwfapxxw.supabase.co/storage/v1/object/public/assets/signatures/aakash_sign.jpg';
 var SIGN_NIKI='https://ferlauhakdbfpwfapxxw.supabase.co/storage/v1/object/public/assets/signatures/niki_sign.png';
-function generateOfferLetterHTML(data){
-  var signImg=data.signatoryKey==='niki'?SIGN_NIKI:SIGN_AAKASH;
-  var ref='BT/OL/'+new Date().getFullYear()+'/'+esc(data.candidateName.split(' ')[0].toUpperCase());
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8"/>'+
-  '<style>@page{size:A4;margin:0;}*{box-sizing:border-box;}body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-size:12px;line-height:1.8;color:#1a1a1a;background:#fff;}.page{width:210mm;min-height:297mm;position:relative;background:url('+JSON.stringify(LH_URL)+') no-repeat top left/210mm auto;background-color:#fff;}.content{position:absolute;top:38mm;left:20mm;right:20mm;bottom:20mm;}.meta{font-size:11px;color:#555;margin-bottom:18px;}.meta div{margin-bottom:2px;}h2{font-size:13px;font-weight:700;margin:0 0 16px;text-decoration:underline;text-underline-offset:3px;}p{margin:0 0 12px;font-size:12px;}strong{font-weight:600;}table{width:100%;border-collapse:collapse;margin:12px 0 16px;}td{padding:7px 10px;border:1px solid #ddd;font-size:11.5px;vertical-align:top;}td:first-child{width:40%;font-weight:600;background:#f9f9f9;}.sig-block{margin-top:36px;}.sig-img{height:44px;display:block;margin-bottom:2px;}.sig-name{font-weight:700;font-size:12px;}.sig-desig{font-size:11px;color:#555;}</style></head><body>'+
-  '<div class="page"><div class="content">'+
-  '<div class="meta"><div>'+esc(data.generatedDate)+'</div><div>Ref: '+ref+'</div></div>'+
-  '<p>Dear <strong>'+esc(data.candidateName)+'</strong>,</p>'+
-  '<h2>Offer of Employment</h2>'+
-  '<p>We are pleased to offer you the position of <strong>'+esc(data.roleTitle)+'</strong> at Butter Toast. We look forward to having you join our team.</p>'+
-  '<table><tr><td>Position</td><td>'+esc(data.roleTitle)+'</td></tr>'+
-  (data.department?'<tr><td>Department</td><td>'+esc(data.department)+'</td></tr>':'')+
-  '<tr><td>Employment Type</td><td style="text-transform:capitalize">'+esc(data.employmentType)+'</td></tr>'+
-  '<tr><td>Date of Joining</td><td>'+esc(data.joiningDate)+'</td></tr>'+
-  '<tr><td>Compensation</td><td>'+esc(data.ctc)+'</td></tr>'+
-  '</table>'+
-  '<p>This offer is subject to verification of your documents. Formal terms including notice period and other conditions will be outlined in your appointment letter on your date of joining.</p>'+
-  '<p>Kindly confirm your acceptance of this offer at the earliest.</p>'+
-  '<p>We are excited to welcome you to the Butter Toast family.</p>'+
-  '<div class="sig-block"><p style="margin-bottom:6px;">Warm regards,</p>'+
-  '<img class="sig-img" src="'+signImg+'" alt=""/>'+
-  '<div class="sig-name">'+esc(data.signatoryName)+'</div>'+
-  '<div class="sig-desig">'+esc(data.signatoryDesignation)+', Butter Toast</div>'+
-  '</div></div></div></body></html>';
-}
-
 function downloadHTML(html, fileName){
   var blob=new Blob([html],{type:'text/html'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');a.href=url;a.download=fileName;
   document.body.appendChild(a);a.click();
   setTimeout(function(){URL.revokeObjectURL(url);document.body.removeChild(a);},1000);
+}
+async function generateDocViaStock(payload){
+  var res=await fetch(STOCK_PDF_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+  if(!res.ok){throw new Error('Stock engine returned '+res.status);}
+  var data=await res.json();
+  if(!data||!data.html){throw new Error('No HTML returned');}
+  // Open in a new tab for review + print-to-PDF
+  var w=window.open('','_blank');
+  if(w){w.document.open();w.document.write(data.html);w.document.close();}
+  return data;
+}
+
+// Generate a document from inside the onboarding cockpit for the current candidate.
+async function cockpitGenerate(docType){
+  var obId=document.getElementById('ob-id').value;
+  var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
+  if(!ob){toast('Onboarding entry not found.','fail');return;}
+  var c=ALL_CANDIDATES.find(function(x){return x.id===ob.candidate_id;});
+  if(!c){toast('Candidate not found.','fail');return;}
+  var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
+  var btnId=docType==='offer_letter'?'ob-gen-offer':'ob-gen-appoint';
+  var btn=document.getElementById(btnId);
+  if(btn){btn.disabled=true;btn.textContent='Generating...';}
+  try{
+    await generateDocViaStock({
+      document_type:docType,
+      candidate_id:c.id,
+      drive_folder_id:c.drive_folder_id||null,
+      employee_name:c.full_name,
+      role_title:role?role.title:(ob.role_title||''),
+      department:role?(DEPT_DISPLAY[role.department]||role.department):(ob.department||''),
+      employment_type:role?role.employment_type:'permanent',
+      reports_to_name:'',
+      joining_date:c.joining_date||'',
+      effective_date:new Date().toISOString().split('T')[0]
+    });
+    toast('Document generated. Review in the new tab, then print to PDF.');
+    loadObDocs(obId);
+  }catch(e){
+    toast('Failed to generate document.','fail');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=docType==='offer_letter'?'Offer letter':'Appointment letter';}
+  }
 }
 
 // ── CONVERT TO EMPLOYEE ───────────────────────────────────────────────────────
