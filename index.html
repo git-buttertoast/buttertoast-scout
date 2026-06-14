@@ -1948,6 +1948,7 @@ function openCandidate(id){
   html+='<button class="btn bg2x bsm" onclick="openEditCandidate(\''+id+'\')">Edit details</button>';
   html+='<button class="btn bg2x bsm" onclick="addToContacts(\''+id+'\')">Save contact</button>';
   if(c.stage==='offer'){
+    var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
     var isIntern=(role&&role.employment_type==='intern');
     if(isIntern){
       html+='<button class="btn bgreen bsm" data-cid2="'+id+'" onclick="openInternshipOfferModal(this.dataset.cid2)">Generate internship offer</button>';
