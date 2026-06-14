@@ -626,10 +626,9 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         <div style="margin-top:12px;padding:12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;">
           <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;">Generate document</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn bg2x bsm" id="ob-gen-offer" onclick="cockpitGenerate('offer_letter')">Offer letter</button>
-            <button class="btn bg2x bsm" id="ob-gen-appoint" onclick="cockpitGenerate('appointment_letter')">Appointment letter</button>
+            <button class="btn bg2x bsm" id="ob-gen-appoint" onclick="openAppointmentFromCockpit()">Appointment letter</button>
           </div>
-          <div style="font-size:11px;color:var(--text3);margin-top:8px;">Opens a print-ready letter in a new tab. Saved to this candidate automatically.</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px;">The formal employment contract. Opens a print-ready letter in a new tab; saved to this candidate automatically. (The offer letter is generated earlier, at the Offer stage.)</div>
         </div>
         <div id="ob-docs-list" style="margin-top:12px;"></div>
       </div>
@@ -863,23 +862,32 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 
 <!-- OFFER LETTER MODAL -->
 <div class="mbg mbg-c" id="m-offer">
-  <div class="modal" style="max-width:480px;">
+  <div class="modal" style="max-width:520px;">
     <h2>Generate offer letter</h2>
     <p class="msub">Opens a print-ready letter in a new tab. Use your browser's Print &rarr; Save as PDF.</p>
     <input type="hidden" id="offer-cand-id"/>
     <div class="fsec">
-      <div class="frow"><label class="lbl">CTC / Stipend *</label><input class="inp" id="offer-ctc" placeholder="e.g. 4,80,000 per annum"/></div>
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Monthly CTC (probation) *</label><input class="inp" id="offer-ctc" placeholder="e.g. 30,000"/></div>
+        <div class="frow"><label class="lbl">Confirmed CTC (post-probation) *</label><input class="inp" id="offer-confirmed-ctc" placeholder="e.g. 35,000"/></div>
+      </div>
       <div class="frow"><label class="lbl">Joining Date *</label>
         <div style="position:relative;width:100%">
           <input type="text" class="inp" id="offer-joining-display" readonly placeholder="Select date" style="cursor:pointer"/>
           <input type="date" id="offer-joining" onchange="document.getElementById('offer-joining-display').value=fmtDateShort(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
         </div>
       </div>
-      <div class="frow"><label class="lbl">Signatory</label>
-        <select class="inp" id="offer-sig-key">
-          <option value="aakash">Aakash Rathi, Founder</option>
-          <option value="niki">Niki A. Rathi, Director</option>
-        </select>
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Reporting Manager *</label><select class="inp" id="offer-reports-to"><option value="">-- Select --</option></select></div>
+        <div class="frow"><label class="lbl">Signatory</label>
+          <select class="inp" id="offer-sig-key">
+            <option value="aakash">Aakash Rathi, Founder</option>
+            <option value="niki">Niki A. Rathi, Director</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow"><label class="lbl">Duties &amp; Responsibilities <span style="color:var(--text3);font-weight:400">(auto-filled from JD, editable)</span></label>
+        <textarea class="inp" id="offer-duties" rows="6" placeholder="- One responsibility per line" style="resize:vertical;line-height:1.6"></textarea>
       </div>
     </div>
     <div class="mf">
@@ -888,6 +896,51 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
     </div>
   </div>
 </div>
+</div>
+
+<!-- APPOINTMENT LETTER MODAL -->
+<div class="mbg mbg-c" id="m-appoint">
+  <div class="modal" style="max-width:520px;">
+    <h2>Generate appointment letter</h2>
+    <p class="msub">Formal employment contract (includes confidentiality, IP, notice &amp; termination terms). Opens print-ready in a new tab.</p>
+    <input type="hidden" id="appoint-cand-id"/>
+    <div class="fsec">
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Monthly CTC (probation) *</label><input class="inp" id="appoint-ctc" placeholder="e.g. 30,000"/></div>
+        <div class="frow"><label class="lbl">Confirmed CTC (post-probation) *</label><input class="inp" id="appoint-confirmed-ctc" placeholder="e.g. 35,000"/></div>
+      </div>
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Joining Date *</label>
+          <div style="position:relative;width:100%">
+            <input type="text" class="inp" id="appoint-joining-display" readonly placeholder="Select date" style="cursor:pointer"/>
+            <input type="date" id="appoint-joining" onchange="onAppointJoiningChange(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
+          </div>
+        </div>
+        <div class="frow"><label class="lbl">Probation Ends *</label>
+          <div style="position:relative;width:100%">
+            <input type="text" class="inp" id="appoint-probation-display" readonly placeholder="Auto (joining + 3 months)" style="cursor:pointer"/>
+            <input type="date" id="appoint-probation" onchange="document.getElementById('appoint-probation-display').value=fmtDateShort(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
+          </div>
+        </div>
+      </div>
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Reporting Manager *</label><select class="inp" id="appoint-reports-to"><option value="">-- Select --</option></select></div>
+        <div class="frow"><label class="lbl">Signatory</label>
+          <select class="inp" id="appoint-sig-key">
+            <option value="aakash">Aakash Rathi, Founder</option>
+            <option value="niki">Niki A. Rathi, Director</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow"><label class="lbl">Duties &amp; Responsibilities <span style="color:var(--text3);font-weight:400">(auto-filled from JD, editable)</span></label>
+        <textarea class="inp" id="appoint-duties" rows="6" placeholder="- One responsibility per line" style="resize:vertical;line-height:1.6"></textarea>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg2x" onclick="closeM('m-appoint')">Cancel</button>
+      <button class="btn bp" id="btn-gen-appoint" onclick="generateAppointmentLetter()"><span class="spin" id="appoint-spin" style="display:none"></span>Generate appointment letter</button>
+    </div>
+  </div>
 </div>
 
 <!-- INTERNSHIP OFFER MODAL -->
@@ -1096,7 +1149,7 @@ var ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 var DRIVE_URL = 'https://script.google.com/macros/s/AKfycbyVbz5RdpIuwkkyqrvccttilVhxKB71BXWblIC7jrLa4k8G6pqJLMSVWzdE11iq17yvaA/exec';
 
 var ME = null, MY_ROLE = null;
-var ALL_CANDIDATES = [], ALL_ROLES = [], ALL_ASSIGNMENTS = [], ALL_TEMPLATES = [], ALL_JDS = [];
+var ALL_CANDIDATES = [], ALL_ROLES = [], ALL_ASSIGNMENTS = [], ALL_TEMPLATES = [], ALL_JDS = [], ALL_EMPLOYEES = [];
 var ACTIVE_CANDIDATE = null;
 
 var ROLE_DISPLAY = {
@@ -1282,18 +1335,24 @@ async function loadApp(user){
 }
 
 async function loadAllData(){
-  var [cRes,rRes,aRes,tRes,jRes] = await Promise.all([
+  var [cRes,rRes,aRes,tRes,jRes,eRes] = await Promise.all([
     db.from('scout_candidates').select('*').order('created_at',{ascending:false}),
     db.from('scout_roles').select('*').order('created_at',{ascending:false}),
     db.from('scout_assignments').select('*').order('created_at',{ascending:false}),
     db.from('scout_templates').select('*').order('created_at',{ascending:false}),
-    db.from('scout_jd_templates').select('*').order('created_at',{ascending:false})
+    db.from('scout_jd_templates').select('*').order('created_at',{ascending:false}),
+    db.from('employee_profiles').select('id,designation,profiles(full_name,is_active)')
   ]);
   ALL_CANDIDATES = cRes.data||[];
   ALL_ROLES = rRes.data||[];
   ALL_ASSIGNMENTS = aRes.data||[];
   ALL_TEMPLATES = tRes.data||[];
   ALL_JDS = jRes.data||[];
+  // Active employees only, sorted by name — used for reporting-manager dropdowns.
+  ALL_EMPLOYEES = (eRes.data||[])
+    .filter(function(e){return e.profiles&&e.profiles.is_active;})
+    .map(function(e){return {id:e.id,name:e.profiles.full_name,designation:e.designation||''};})
+    .sort(function(a,b){return a.name.localeCompare(b.name);});
   populateRoleDropdowns();
 }
 
@@ -2597,12 +2656,31 @@ function openOfferModal(candidateId){
   var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
   var role=c?ALL_ROLES.find(function(x){return x.id===c.role_id;}):null;
   document.getElementById('offer-cand-id').value=candidateId;
-  document.getElementById('offer-joining').value=new Date().toISOString().split('T')[0];
+  document.getElementById('offer-joining').value='';
   document.getElementById('offer-joining-display').value='';
+  document.getElementById('offer-ctc').value='';
+  document.getElementById('offer-confirmed-ctc').value='';
+  // Populate reporting-manager dropdown from active employees.
+  fillManagerDropdown('offer-reports-to');
+  // Auto-fill duties from the role's JD (editable).
+  document.getElementById('offer-duties').value=dutiesFromJD(c);
   var sub=document.getElementById('offer-role-sub');
   if(sub)sub.textContent=role?role.title+(role.department?' · '+(DEPT_DISPLAY[role.department]||role.department):''):'';
   closeM('m-candidate');
   openM('m-offer');
+}
+
+// Fill a <select> with active employees as reporting-manager options.
+function fillManagerDropdown(selectId){
+  var el=document.getElementById(selectId);
+  if(!el)return;
+  while(el.options.length>1)el.remove(1);
+  ALL_EMPLOYEES.forEach(function(e){
+    var o=document.createElement('option');
+    o.value=e.id;
+    o.textContent=e.name+(e.designation?' — '+e.designation:'');
+    el.appendChild(o);
+  });
 }
 
 async function generateOfferLetter(){
@@ -2613,10 +2691,17 @@ async function generateOfferLetter(){
   if(!c){toast('Candidate not found.','fail');return;}
   var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
   var ctc=document.getElementById('offer-ctc').value.trim();
+  var confirmedCtc=document.getElementById('offer-confirmed-ctc').value.trim();
   var joining=document.getElementById('offer-joining').value;
   var sigKey=document.getElementById('offer-sig-key').value;
+  var reportsToId=document.getElementById('offer-reports-to').value;
+  var duties=document.getElementById('offer-duties').value.trim();
 
-  if(!ctc||!joining){toast('CTC and joining date are required.','fail');return;}
+  if(!ctc||!confirmedCtc||!joining||!reportsToId){
+    toast('CTC, confirmed CTC, joining date and reporting manager are all required.','fail');
+    return;
+  }
+  var mgr=ALL_EMPLOYEES.find(function(e){return e.id===reportsToId;});
 
   btn.disabled=true; spin.style.display='inline-block';
   try{
@@ -2627,10 +2712,12 @@ async function generateOfferLetter(){
       employee_name:c.full_name,
       role_title:role?role.title:'',
       department:role?(DEPT_DISPLAY[role.department]||role.department):'',
-      reports_to_name:'',
+      reports_to_name:mgr?mgr.name:'',
       joining_date:joining,
       effective_date:new Date().toISOString().split('T')[0],
       probation_ctc:ctc,
+      confirmed_ctc:confirmedCtc,
+      duties:duties,
       signatory_key:sigKey
     });
     closeM('m-offer');
@@ -2674,36 +2761,130 @@ async function generateDocViaStock(payload){
   return data;
 }
 
-// Generate a document from inside the onboarding cockpit for the current candidate.
-async function cockpitGenerate(docType){
+// Pull the "what you'll be doing" duties from a candidate's role JD, returned as
+// newline-separated "- bullet" lines (the format the document templates expect).
+// Falls back gracefully: exact JD link -> role_type+seniority match -> role_type match.
+function dutiesFromJD(candidate){
+  if(!candidate)return '';
+  var role=ALL_ROLES.find(function(x){return x.id===candidate.role_id;});
+  if(!role)return '';
+  var jd=null;
+  if(role.jd_template_id)jd=ALL_JDS.find(function(j){return j.id===role.jd_template_id;});
+  if(!jd&&role.role_type)jd=ALL_JDS.find(function(j){return j.role_type===role.role_type&&j.seniority_level===role.seniority_level;});
+  if(!jd&&role.role_type)jd=ALL_JDS.find(function(j){return j.role_type===role.role_type;});
+  if(!jd||!jd.content)return '';
+  var lines=jd.content.split('\n');
+  var out=[];
+  var capturing=false;
+  for(var i=0;i<lines.length;i++){
+    var trimmed=lines[i].trim();
+    if(!capturing){
+      // Start capturing at the duties header (e.g. "WHAT YOU'LL BE DOING ...").
+      if(/^WHAT YOU/i.test(trimmed))capturing=true;
+      continue;
+    }
+    // Stop at the next ALL-CAPS section header.
+    if(/^[A-Z][A-Z &/]{3,}$/.test(trimmed))break;
+    // Collect bullet lines.
+    if(/^[-*]\s+/.test(trimmed))out.push('- '+trimmed.replace(/^[-*]\s+/,''));
+  }
+  return out.join('\n');
+}
+// Cockpit Documents tab: open the appointment-letter form for the current candidate.
+// (Offer letters are generated earlier, at the Offer stage, from the candidate drawer.)
+function openAppointmentFromCockpit(){
   var obId=document.getElementById('ob-id').value;
   var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
   if(!ob){toast('Onboarding entry not found.','fail');return;}
-  var c=ALL_CANDIDATES.find(function(x){return x.id===ob.candidate_id;});
+  openAppointmentModal(ob.candidate_id);
+}
+
+function openAppointmentModal(candidateId){
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
+  if(!c){toast('Candidate not found.','fail');return;}
+  document.getElementById('appoint-cand-id').value=candidateId;
+  document.getElementById('appoint-ctc').value='';
+  document.getElementById('appoint-confirmed-ctc').value='';
+  document.getElementById('appoint-joining').value='';
+  document.getElementById('appoint-joining-display').value='';
+  document.getElementById('appoint-probation').value='';
+  document.getElementById('appoint-probation-display').value='';
+  fillManagerDropdown('appoint-reports-to');
+  document.getElementById('appoint-duties').value=dutiesFromJD(c);
+  openM('m-appoint');
+}
+
+// When joining date is set, default probation end to joining + 3 months (editable).
+function onAppointJoiningChange(val){
+  document.getElementById('appoint-joining-display').value=fmtDateShort(val);
+  if(val){
+    var d=new Date(val+'T00:00:00');
+    d.setMonth(d.getMonth()+3);
+    var iso=d.toISOString().split('T')[0];
+    document.getElementById('appoint-probation').value=iso;
+    document.getElementById('appoint-probation-display').value=fmtDateShort(iso);
+  }
+}
+
+async function generateAppointmentLetter(){
+  var btn=document.getElementById('btn-gen-appoint');
+  var spin=document.getElementById('appoint-spin');
+  var candId=document.getElementById('appoint-cand-id').value;
+  var c=ALL_CANDIDATES.find(function(x){return x.id===candId;});
   if(!c){toast('Candidate not found.','fail');return;}
   var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
-  var btnId=docType==='offer_letter'?'ob-gen-offer':'ob-gen-appoint';
-  var btn=document.getElementById(btnId);
-  if(btn){btn.disabled=true;btn.textContent='Generating...';}
+  var ctc=document.getElementById('appoint-ctc').value.trim();
+  var confirmedCtc=document.getElementById('appoint-confirmed-ctc').value.trim();
+  var joining=document.getElementById('appoint-joining').value;
+  var probationEnd=document.getElementById('appoint-probation').value;
+  var reportsToId=document.getElementById('appoint-reports-to').value;
+  var sigKey=document.getElementById('appoint-sig-key').value;
+  var duties=document.getElementById('appoint-duties').value.trim();
+
+  if(!ctc||!confirmedCtc||!joining||!probationEnd||!reportsToId){
+    toast('CTC, confirmed CTC, joining date, probation end and reporting manager are all required.','fail');
+    return;
+  }
+  var mgr=ALL_EMPLOYEES.find(function(e){return e.id===reportsToId;});
+
+  btn.disabled=true; spin.style.display='inline-block';
   try{
     await generateDocViaStock({
-      document_type:docType,
-      candidate_id:c.id,
+      document_type:'appointment_letter',
+      candidate_id:candId,
       drive_folder_id:c.drive_folder_id||null,
       employee_name:c.full_name,
-      role_title:role?role.title:(ob.role_title||''),
-      department:role?(DEPT_DISPLAY[role.department]||role.department):(ob.department||''),
-      employment_type:role?role.employment_type:'permanent',
-      reports_to_name:'',
-      joining_date:c.joining_date||'',
-      effective_date:new Date().toISOString().split('T')[0]
+      role_title:role?role.title:'',
+      department:role?(DEPT_DISPLAY[role.department]||role.department):'',
+      reports_to_name:mgr?mgr.name:'',
+      joining_date:joining,
+      effective_date:new Date().toISOString().split('T')[0],
+      monthly_ctc:ctc,
+      confirmed_ctc:confirmedCtc,
+      probation_end_date:probationEnd,
+      duties:duties,
+      signatory_key:sigKey
     });
-    toast('Document generated. Review in the new tab, then print to PDF.');
-    loadObDocs(obId);
+    // Persist the letter terms to the onboarding row so convert-to-employee can use
+    // them as the source of truth (employee record will match the signed letter).
+    var obId=document.getElementById('ob-id').value;
+    if(obId){
+      await db.from('scout_onboarding').update({
+        ctc:ctc,
+        confirmed_ctc:confirmedCtc,
+        reports_to_id:reportsToId,
+        joining_date:joining,
+        probation_end_date:probationEnd,
+        employment_type:role?role.employment_type:'permanent'
+      }).eq('id',obId);
+    }
+    closeM('m-appoint');
+    toast('Appointment letter generated. Review in the new tab, then print to PDF.');
+    if(obId)loadObDocs(obId);
   }catch(e){
-    toast('Failed to generate document.','fail');
+    toast('Failed to generate appointment letter.','fail');
   }finally{
-    if(btn){btn.disabled=false;btn.textContent=docType==='offer_letter'?'Offer letter':'Appointment letter';}
+    btn.disabled=false; spin.style.display='none';
   }
 }
 
