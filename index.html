@@ -1267,7 +1267,18 @@ async function loadApp(user){
   await loadAllData();
   setupNav();
   setupMobile();
-  renderDashboard();
+  // Open the page named in the URL hash (so refresh keeps you in place); default to dashboard.
+  var VALID_PAGES=['dashboard','pipeline','candidates','directory','roles','jd-library','assignments','templates','onboarding'];
+  var startPage=location.hash.slice(1);
+  showPage(VALID_PAGES.indexOf(startPage)>=0?startPage:'dashboard');
+  // Browser back/forward between pages.
+  window.addEventListener('hashchange',function(){
+    var p=location.hash.slice(1);
+    if(VALID_PAGES.indexOf(p)>=0){
+      var cur=document.querySelector('.page.show');
+      if(!cur||cur.id!=='page-'+p)showPage(p);
+    }
+  });
 }
 
 async function loadAllData(){
@@ -1330,6 +1341,8 @@ function showPage(page){
   if(pg)pg.classList.add('show');
   var nb=document.querySelector('.nb[data-page="'+page+'"]');
   if(nb)nb.classList.add('active');
+  // Reflect the current page in the URL so refresh / back / forward work.
+  if(location.hash.slice(1)!==page){ location.hash=page; }
   if(page==='dashboard')renderDashboard();
   else if(page==='pipeline')renderPipeline();
   else if(page==='candidates')renderCandidates();
