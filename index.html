@@ -1810,19 +1810,28 @@ async function openOnboarding(obId){
   openM('m-onboarding');
 }
 
+// Steps that happen automatically during/after the convert flow (creating the
+// employee account). These do NOT gate "Mark complete" — they get auto-ticked
+// when convert runs. Everything else is a manual pre-convert step that the human
+// must complete first.
+var OB_AUTO_STEPS=['tool_access','system_access'];
+
 function renderObChecklist(ob){
-  var order=['drive_folder','tool_access','offer_communicated','whatsapp_added','payroll_setup','kyc_collected','bank_details','appointment_signed','system_access','role_briefing','first_task'];
+  var order=['drive_folder','offer_communicated','whatsapp_added','payroll_setup','kyc_collected','bank_details','appointment_signed','tool_access','system_access','role_briefing','first_task'];
   var items=(ob.scout_onboarding_checklist||[]).sort(function(a,b){return order.indexOf(a.step_key)-order.indexOf(b.step_key);});
   var container=document.getElementById('ob-checklist-items');
   container.innerHTML='';
   items.forEach(function(item){
+    var isAuto=OB_AUTO_STEPS.indexOf(item.step_key)!==-1;
     var row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;cursor:pointer;opacity:'+(item.completed?'0.6':'1');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;cursor:'+(isAuto?'default':'pointer')+';opacity:'+(item.completed?'0.6':'1');
     row.dataset.obid=ob.id;row.dataset.iid=item.id;row.dataset.checked=item.completed?'true':'false';
-    row.addEventListener('click',function(e){
-      if(e.target.tagName==='BUTTON'||e.target.tagName==='A')return;
-      toggleChecklistItem(this.dataset.obid,this.dataset.iid,this.dataset.checked==='true');
-    });
+    if(!isAuto){
+      row.addEventListener('click',function(e){
+        if(e.target.tagName==='BUTTON'||e.target.tagName==='A')return;
+        toggleChecklistItem(this.dataset.obid,this.dataset.iid,this.dataset.checked==='true');
+      });
+    }
     var checkDiv=document.createElement('div');
     checkDiv.style.cssText='width:18px;height:18px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px solid '+(item.completed?'var(--orange)':'var(--bdr)')+';background:'+(item.completed?'var(--orange)':'transparent');
     if(item.completed)checkDiv.innerHTML='<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -1838,16 +1847,19 @@ function renderObChecklist(ob){
       btn.addEventListener('click',function(e){e.stopPropagation();createDriveFolderForOnboarding(this.dataset.obid,this.dataset.cid);});
       row.appendChild(btn);
     }
-    if(item.step_key==='tool_access'&&!item.completed){
-      var link=document.createElement('a');
-      link.href='https://chef.buttertoast.co';link.target='_blank';link.className='btn bg2x bxs';link.style.cssText='margin-left:auto;font-size:11px;';link.textContent='Open Chef';
-      link.addEventListener('click',function(e){e.stopPropagation();});
-      row.appendChild(link);
+    if(isAuto&&!item.completed){
+      var tag=document.createElement('span');
+      tag.style.cssText='margin-left:auto;font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--bdr);border-radius:5px;padding:2px 7px;white-space:nowrap;';
+      tag.textContent='Auto on account creation';
+      row.appendChild(tag);
     }
     container.appendChild(row);
   });
-  var allDone=items.length>0&&items.every(function(i){return i.completed;});
-  document.getElementById('ob-complete-btn').style.display=allDone?'inline-flex':'none';
+  // Gate "Mark complete" on the MANUAL (pre-convert) steps only. Auto steps are
+  // granted by convert itself, so requiring them here would be a deadlock.
+  var manual=items.filter(function(i){return OB_AUTO_STEPS.indexOf(i.step_key)===-1;});
+  var manualDone=manual.length>0&&manual.every(function(i){return i.completed;});
+  document.getElementById('ob-complete-btn').style.display=manualDone?'inline-flex':'none';
 }
 
 async function toggleChecklistItem(obId,itemId,currentState){
@@ -1935,6 +1947,28 @@ async function onConvertEmployeeSuccess(employeeId,candidateId){
     var kyc=await db.from('employee_kyc').select('id,profile_id').eq('candidate_id',candidateId).maybeSingle();
     if(kyc.data&&!kyc.data.profile_id){
       await db.from('employee_kyc').update({profile_id:employeeId}).eq('id',kyc.data.id);
+    }
+  }
+  // Convert has now created the auth user, granted app_access + roles to all core
+  // apps, and confirmed system access. Auto-tick the post-convert checklist steps
+  // so the human doesn't have to (they were never manual actions).
+  if(ob&&ob.id){
+    var autoKeys=['tool_access','system_access'];
+    if(ob.drive_folder_url)autoKeys.push('drive_folder');
+    await autoCompleteSteps(ob.id,autoKeys);
+  }
+}
+
+// Mark specific checklist steps complete by step_key (idempotent).
+async function autoCompleteSteps(obId,stepKeys){
+  var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
+  if(!ob||!ob.scout_onboarding_checklist)return;
+  var now=new Date().toISOString();
+  for(var i=0;i<stepKeys.length;i++){
+    var item=ob.scout_onboarding_checklist.find(function(s){return s.step_key===stepKeys[i];});
+    if(item&&!item.completed){
+      await db.from('scout_onboarding_checklist').update({completed:true,completed_at:now,completed_by:ME.id}).eq('id',item.id);
+      item.completed=true;item.completed_at=now;
     }
   }
 }
@@ -2104,7 +2138,7 @@ async function createOnboardingEntry(candidateId){
   }
   var steps=[
     {step_key:'drive_folder',label:'Drive folder created'},
-    {step_key:'tool_access',label:'Tool access requested in Chef'},
+    {step_key:'tool_access',label:'Tool access granted'},
     {step_key:'offer_communicated',label:'Offer communicated to candidate'},
     {step_key:'whatsapp_added',label:'Added to WhatsApp and team comms'},
     {step_key:'payroll_setup',label:'Payroll set up'},
@@ -2969,8 +3003,8 @@ async function doConvert(){
     var msg='Employee account created in Roster.\n\nTemp password: '+result.tempPassword+'\n\nShare this with '+c.full_name+' -- they can change it after first login.';
     alert(msg);
     toast(c.full_name+' is now an employee in Roster.');
-    // Wire up drive folder URL and KYC profile link
-    if(result.employeeId) onConvertEmployeeSuccess(result.employeeId, candId);
+    // Wire up drive folder URL, KYC profile link, and auto-tick post-convert steps
+    if(result.employeeId) await onConvertEmployeeSuccess(result.employeeId, candId);
     renderDashboard();
 
   }catch(err){
