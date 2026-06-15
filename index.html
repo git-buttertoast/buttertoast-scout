@@ -1000,22 +1000,11 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 <div class="mbg mbg-c" id="m-convert">
   <div class="modal convert-modal">
     <h2>Convert to employee</h2>
-    <p class="msub">Capture personal details before creating the employee record in Roster.</p>
+    <p class="msub">Review and confirm to create the employee account in Roster. KYC is pulled from the onboarding KYC tab.</p>
     <input type="hidden" id="conv-cand-id"/>
     <div class="fsec">
-      <h4>Identity</h4>
-      <div class="fgrid">
-        <div class="frow"><label class="lbl">Aadhaar number</label><input class="inp" id="conv-aadhaar" placeholder="XXXX XXXX XXXX"/></div>
-        <div class="frow"><label class="lbl">PAN number</label><input class="inp" id="conv-pan" placeholder="ABCDE1234F"/></div>
-      </div>
-    </div>
-    <div class="fsec">
-      <h4>Bank details</h4>
-      <div class="frow"><label class="lbl">Bank name</label><input class="inp" id="conv-bank" placeholder="e.g. HDFC Bank"/></div>
-      <div class="fgrid">
-        <div class="frow"><label class="lbl">Account number</label><input class="inp" id="conv-acc" placeholder="XXXXXXXXXX"/></div>
-        <div class="frow"><label class="lbl">IFSC code</label><input class="inp" id="conv-ifsc" placeholder="HDFC0001234"/></div>
-      </div>
+      <h4>KYC on file</h4>
+      <div id="conv-kyc-summary" style="font-size:12px;color:var(--text2);background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;line-height:1.7;"></div>
     </div>
     <div class="fsec">
       <h4>Employment</h4>
@@ -1815,14 +1804,24 @@ async function openOnboarding(obId){
 // employee account). These do NOT gate "Mark complete" — they get auto-ticked
 // when convert runs. Everything else is a manual pre-convert step that the human
 // must complete first.
+// Onboarding checklist is organised around the convert pivot (account creation):
+//   PRE-HIRE steps gate the "Create Employee Account" button.
+//   POST-HIRE steps happen after the account exists and gate "Mark Complete".
+//   AUTO steps are ticked automatically by convert.
+var OB_PREHIRE_STEPS=['offer_communicated','kyc_collected','appointment_signed','payroll_setup'];
+var OB_POSTHIRE_STEPS=['tool_access','system_access','drive_folder','whatsapp_added','role_briefing','first_task'];
 var OB_AUTO_STEPS=['tool_access','system_access'];
 
 function renderObChecklist(ob){
-  var order=['drive_folder','offer_communicated','whatsapp_added','payroll_setup','kyc_collected','bank_details','appointment_signed','tool_access','system_access','role_briefing','first_task'];
-  var items=(ob.scout_onboarding_checklist||[]).sort(function(a,b){return order.indexOf(a.step_key)-order.indexOf(b.step_key);});
+  var byKey={};(ob.scout_onboarding_checklist||[]).forEach(function(i){byKey[i.step_key]=i;});
+  var cand=ALL_CANDIDATES.find(function(c){return c.id===ob.candidate_id;});
+  // Converted = account already created. Reliable signals: onboarding marked
+  // complete-or-later, or the candidate moved to the system-only 'hired' stage.
+  var converted=ob.status==='complete'||(ob.employee_id!=null)||(cand&&cand.stage==='hired');
   var container=document.getElementById('ob-checklist-items');
   container.innerHTML='';
-  items.forEach(function(item){
+
+  function makeRow(item){
     var isAuto=OB_AUTO_STEPS.indexOf(item.step_key)!==-1;
     var row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;cursor:'+(isAuto?'default':'pointer')+';opacity:'+(item.completed?'0.6':'1');
@@ -1839,8 +1838,7 @@ function renderObChecklist(ob){
     var label=document.createElement('span');
     label.style.cssText='font-size:13px;color:var(--text);'+(item.completed?'text-decoration:line-through':'');
     label.textContent=item.label;
-    row.appendChild(checkDiv);
-    row.appendChild(label);
+    row.appendChild(checkDiv);row.appendChild(label);
     if(item.step_key==='drive_folder'&&!item.completed){
       var btn=document.createElement('button');
       btn.className='btn bg2x bxs';btn.style.cssText='margin-left:auto;font-size:11px;';btn.textContent='Create folder';
@@ -1854,13 +1852,57 @@ function renderObChecklist(ob){
       tag.textContent='Auto on account creation';
       row.appendChild(tag);
     }
-    container.appendChild(row);
+    return row;
+  }
+  function sectionHeader(text){
+    var h=document.createElement('div');
+    h.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text3);margin:6px 0 2px;';
+    h.textContent=text;
+    return h;
+  }
+
+  // ── PHASE 1: pre-hire ──
+  container.appendChild(sectionHeader('Before account creation'));
+  var preItems=OB_PREHIRE_STEPS.map(function(k){return byKey[k];}).filter(Boolean);
+  preItems.forEach(function(it){container.appendChild(makeRow(it));});
+  var preDone=preItems.length>0&&preItems.every(function(i){return i.completed;});
+
+  // ── PIVOT: create account ──
+  var pivot=document.createElement('div');
+  pivot.style.cssText='margin:14px 0;display:flex;flex-direction:column;gap:6px;';
+  if(!converted){
+    var cbtn=document.createElement('button');
+    cbtn.className='btn bp';
+    cbtn.style.cssText='width:100%;'+(preDone?'':'opacity:0.5;cursor:not-allowed;');
+    cbtn.textContent='Create Employee Account \u2192';
+    if(preDone){
+      cbtn.onclick=function(){openConvertModal(ob.candidate_id);};
+    }else{
+      var remaining=preItems.filter(function(i){return !i.completed;}).length;
+      cbtn.disabled=true;
+      cbtn.textContent='Complete '+remaining+' more step'+(remaining===1?'':'s')+' to create account';
+    }
+    pivot.appendChild(cbtn);
+  }else{
+    var done=document.createElement('div');
+    done.style.cssText='width:100%;padding:10px 12px;border-radius:8px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.4);color:#22c55e;font-size:13px;font-weight:600;text-align:center;';
+    done.textContent='\u2713 Employee account created';
+    pivot.appendChild(done);
+  }
+  container.appendChild(pivot);
+
+  // ── PHASE 2: post-hire ──
+  container.appendChild(sectionHeader('After account creation'));
+  var postItems=OB_POSTHIRE_STEPS.map(function(k){return byKey[k];}).filter(Boolean);
+  postItems.forEach(function(it){
+    var r=makeRow(it);
+    if(!converted){ r.style.opacity='0.4'; r.style.pointerEvents='none'; }
+    container.appendChild(r);
   });
-  // Gate "Mark complete" on the MANUAL (pre-convert) steps only. Auto steps are
-  // granted by convert itself, so requiring them here would be a deadlock.
-  var manual=items.filter(function(i){return OB_AUTO_STEPS.indexOf(i.step_key)===-1;});
-  var manualDone=manual.length>0&&manual.every(function(i){return i.completed;});
-  document.getElementById('ob-complete-btn').style.display=manualDone?'inline-flex':'none';
+  var postDone=postItems.length>0&&postItems.every(function(i){return i.completed;});
+
+  // "Mark complete" only after account created AND all post-hire steps done.
+  document.getElementById('ob-complete-btn').style.display=(converted&&postDone&&ob.status!=='complete')?'inline-flex':'none';
 }
 
 async function toggleChecklistItem(obId,itemId,currentState){
@@ -1929,13 +1971,14 @@ async function createDriveFolderForOnboarding(obId,candidateId){
 
 async function markOnboardingComplete(){
   var obId=document.getElementById('ob-id').value;
-  if(!confirm('Mark this onboarding as complete? This will open the employee creation flow.'))return;
+  if(!confirm('Mark this onboarding as fully complete? The employee account is already created; this just closes out the checklist.'))return;
   var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
   if(!ob)return;
-  await db.from('scout_onboarding').update({status:'complete',completed_at:new Date().toISOString()}).eq('id',obId);
+  var r=await db.from('scout_onboarding').update({status:'complete',completed_at:new Date().toISOString()}).eq('id',obId);
+  if(r.error){toast('Could not mark complete: '+r.error.message,'fail');return;}
+  ob.status='complete';
   closeM('m-onboarding');
-  openConvertModal(ob.candidate_id);
-  toast('Onboarding complete. Finish creating the employee account.');
+  toast('Onboarding complete for '+(ALL_CANDIDATES.find(function(c){return c.id===ob.candidate_id;})||{}).full_name+'.');
   renderOnboarding();
 }
 
@@ -2138,15 +2181,14 @@ async function createOnboardingEntry(candidateId){
     return{ok:false,reason:'Could not create onboarding entry: '+(res.error?res.error.message:'no row returned')};
   }
   var steps=[
-    {step_key:'drive_folder',label:'Drive folder created'},
-    {step_key:'tool_access',label:'Tool access granted'},
     {step_key:'offer_communicated',label:'Offer communicated to candidate'},
-    {step_key:'whatsapp_added',label:'Added to WhatsApp and team comms'},
-    {step_key:'payroll_setup',label:'Payroll set up'},
-    {step_key:'kyc_collected',label:'KYC documents collected'},
-    {step_key:'bank_details',label:'Bank details captured'},
+    {step_key:'kyc_collected',label:'KYC & bank details collected'},
     {step_key:'appointment_signed',label:'Appointment letter signed'},
+    {step_key:'payroll_setup',label:'Payroll set up'},
+    {step_key:'tool_access',label:'Tool access granted'},
     {step_key:'system_access',label:'System access confirmed'},
+    {step_key:'drive_folder',label:'Drive folder created'},
+    {step_key:'whatsapp_added',label:'Added to WhatsApp and team comms'},
     {step_key:'role_briefing',label:'Role briefing done'},
     {step_key:'first_task',label:'First task assigned'}
   ];
@@ -2886,32 +2928,66 @@ async function generateAppointmentLetter(){
 }
 
 // ── CONVERT TO EMPLOYEE ───────────────────────────────────────────────────────
-function openConvertModal(candidateId){
+async function openConvertModal(candidateId){
   var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
   if(!c)return;
   if(c.stage==='hired'){toast('This candidate has already been converted to an employee.','fail');return;}
   var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
+  var ob=ALL_ONBOARDING.find(function(x){return x.candidate_id===candidateId;});
   document.getElementById('conv-cand-id').value=candidateId;
-  document.getElementById('conv-joining').value=new Date().toISOString().split('T')[0];
-  document.getElementById('conv-role').value='';
-  document.getElementById('conv-seniority').value='';
-  document.getElementById('conv-desig').value='';
+
+  // Joining date: from the appointment-letter terms if captured, else today.
+  document.getElementById('conv-joining').value=(ob&&ob.joining_date)?ob.joining_date:new Date().toISOString().split('T')[0];
+
+  // Department / employment type: from the candidate's pipeline role.
   document.getElementById('conv-dept').value=role&&role.department?role.department:'design';
   document.getElementById('conv-type').value=role&&role.employment_type?role.employment_type:'permanent';
-  if(document.getElementById('conv-desig-display')) document.getElementById('conv-desig-display').textContent='--';
-  document.getElementById('conv-aadhaar').value='';
-  document.getElementById('conv-pan').value='';
-  document.getElementById('conv-bank').value='';
-  document.getElementById('conv-acc').value='';
-  document.getElementById('conv-ifsc').value='';
-  document.getElementById('conv-emp-id').value='';
-  // Suggest a company email from the first name (editable). Do NOT use the
-  // candidate's personal/application email as the login — staff log in with
-  // their @buttertoast.co address.
+
+  // Role / seniority / designation: prefill from the candidate's pipeline role so
+  // HR confirms rather than re-picks. Falls back to blank if unmappable.
+  document.getElementById('conv-role').value=(role&&role.role_type)?role.role_type:'';
+  document.getElementById('conv-seniority').value=(role&&role.seniority_level)?role.seniority_level:'';
+  updateConvDesig();
+
+  // Employee ID: suggest the next sequential number (highest existing + 1).
+  document.getElementById('conv-emp-id').value=await suggestNextEmployeeId();
+
+  // Company email suggestion (editable; staff log in with @buttertoast.co).
   var firstName=(c.full_name||'').trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g,'');
   document.getElementById('conv-email').value=firstName?firstName+'@buttertoast.co':'';
+
+  // KYC summary (read-only) — pulled from the onboarding KYC tab, never re-asked.
+  var sumEl=document.getElementById('conv-kyc-summary');
+  if(sumEl){
+    sumEl.innerHTML='Loading KYC…';
+    var kyc=await db.from('employee_kyc').select('*').eq('candidate_id',candidateId).maybeSingle();
+    if(kyc.data){
+      var k=kyc.data;
+      function row(lbl,val){return '<div><span style="color:var(--text3)">'+lbl+':</span> '+(val?esc(val):'<span style="color:#f59e0b">— missing —</span>')+'</div>';}
+      sumEl.innerHTML=row('Aadhaar',k.aadhaar_number)+row('PAN',k.pan_number)+row('Bank',k.bank_name)+row('Account',k.account_number)+row('IFSC',k.ifsc_code);
+      if(!k.aadhaar_number||!k.pan_number||!k.bank_name){
+        sumEl.innerHTML+='<div style="margin-top:6px;color:#f59e0b;font-size:11px;">Some KYC is missing. You can still create the account and complete KYC later in the KYC tab.</div>';
+      }
+    }else{
+      sumEl.innerHTML='<span style="color:#f59e0b">No KYC on file.</span> You can create the account now and add KYC later in the KYC tab.';
+    }
+  }
   closeM('m-candidate');
   openM('m-convert');
+}
+
+// Suggest the next employee ID as a zero-padded sequential number.
+async function suggestNextEmployeeId(){
+  try{
+    var r=await db.from('employee_profiles').select('employee_id');
+    var max=0;
+    (r.data||[]).forEach(function(e){
+      var n=parseInt(String(e.employee_id||'').replace(/[^0-9]/g,''),10);
+      if(!isNaN(n)&&n>max)max=n;
+    });
+    var next=max+1;
+    return String(next).padStart(4,'0');
+  }catch(e){return '';}
 }
 
 async function doConvert(){
@@ -2938,6 +3014,14 @@ async function doConvert(){
   if(companyEmail.indexOf('@')===-1){toast('Enter a valid company email.','fail');return;}
 
   btn.disabled=true; spin.style.display='inline-block';
+
+  // KYC is the single source of truth in employee_kyc (entered once in the KYC tab).
+  // Read it here rather than re-collecting it in this modal.
+  var savedKyc=null;
+  try{
+    var kq=await db.from('employee_kyc').select('*').eq('candidate_id',candId).maybeSingle();
+    savedKyc=kq.data||null;
+  }catch(e){}
 
   // 1. Create employee Drive folder
   var driveFolderData=null;
@@ -2971,11 +3055,11 @@ async function doConvert(){
       designation: desig,
       department: dept,
       employmentType: empType,
-      aadhaarNumber: document.getElementById('conv-aadhaar').value.trim()||null,
-      panNumber: document.getElementById('conv-pan').value.trim()||null,
-      bankName: document.getElementById('conv-bank').value.trim()||null,
-      accountNumber: document.getElementById('conv-acc').value.trim()||null,
-      ifscCode: document.getElementById('conv-ifsc').value.trim()||null,
+      aadhaarNumber: savedKyc?savedKyc.aadhaar_number||null:null,
+      panNumber: savedKyc?savedKyc.pan_number||null:null,
+      bankName: savedKyc?savedKyc.bank_name||null:null,
+      accountNumber: savedKyc?savedKyc.account_number||null:null,
+      ifscCode: savedKyc?savedKyc.ifsc_code||null:null,
       driveFolderUrl:(function(){var ob=ALL_ONBOARDING.find(function(x){return x.candidate_id===candId;});return ob?ob.drive_folder_url||null:null;})(),
       driveFolderId: driveFolderData?driveFolderData.folderId:null,
       driveFolderLink: driveFolderData?driveFolderData.folderLink:null,
