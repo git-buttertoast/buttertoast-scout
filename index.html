@@ -1346,6 +1346,7 @@ async function loadApp(user){
   await loadAllData();
   setupNav();
   setupMobile();
+  setupRealtime();
   // Open the page named in the URL hash (so refresh keeps you in place); default to dashboard.
   var VALID_PAGES=['dashboard','pipeline','candidates','directory','roles','jd-library','assignments','templates','onboarding'];
   var startPage=location.hash.slice(1);
@@ -1403,6 +1404,57 @@ function populateRoleDropdowns(){
       var o=document.createElement('option');o.value=r.id;o.textContent=r.title;
       el.appendChild(o);
     });
+  });
+}
+
+// ── REALTIME ──────────────────────────────────────────────────────────────────
+// Live-update the UI when Scout data changes anywhere (other tabs / other users)
+// without a manual refresh. On any change we reload data and re-render the page
+// in place — but we guard against disrupting active work (a drag in progress, or
+// an open modal where the user may be mid-edit).
+var SCOUT_RT_CHANNEL=null;
+var SCOUT_RT_TIMER=null;
+var SCOUT_RT_PENDING=false;
+
+function anyModalOpen(){
+  // Any of Scout's editing modals being visible means the user may be mid-input;
+  // defer the reload until they close it so we don't wipe unsaved form state.
+  return !!document.querySelector('.mbg.show, .mbg.open, .modal.show, .modal.open');
+}
+
+function scoutRealtimeReload(){
+  // Don't yank the board out from under an active drag or an open form.
+  if(window.__pipeDragging||anyModalOpen()){
+    SCOUT_RT_PENDING=true; // remember to reload once it's safe
+    return;
+  }
+  SCOUT_RT_PENDING=false;
+  loadAllData().then(function(){
+    var cur=document.querySelector('.page.show');
+    var page=cur?cur.id.replace('page-',''):null;
+    if(page)showPage(page); // re-render current page in place (no navigation)
+  });
+}
+
+function scheduleScoutReload(){
+  // Debounce bursts of changes (e.g. a multi-row write) into a single reload.
+  if(SCOUT_RT_TIMER)clearTimeout(SCOUT_RT_TIMER);
+  SCOUT_RT_TIMER=setTimeout(scoutRealtimeReload,400);
+}
+
+function setupRealtime(){
+  if(SCOUT_RT_CHANNEL){try{db.removeChannel(SCOUT_RT_CHANNEL);}catch(e){}}
+  var tables=['scout_candidates','scout_roles','scout_assignments','scout_templates','scout_jd_templates','scout_onboarding','scout_onboarding_checklist'];
+  var ch=db.channel('scout-realtime');
+  tables.forEach(function(t){
+    ch.on('postgres_changes',{event:'*',schema:'public',table:t},scheduleScoutReload);
+  });
+  ch.subscribe();
+  SCOUT_RT_CHANNEL=ch;
+
+  // When the user finishes a drag or closes a modal, flush any deferred reload.
+  document.addEventListener('mouseup',function(){
+    if(SCOUT_RT_PENDING&&!window.__pipeDragging&&!anyModalOpen())scheduleScoutReload();
   });
 }
 
