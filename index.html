@@ -2814,8 +2814,9 @@ async function loadCandidateAsyncData(candidateId){
   var actionsEl=document.getElementById('d-async-actions');
   if(!actionsEl)return;
   var html='';
-  var docsRes=await db.from('employee_documents').select('id,document_type,generated_at,file_url')
-    .eq('candidate_id',candidateId).in('document_type',['offer_letter','internship_offer']);
+  var docsRes=await db.from('employee_documents').select('id,document_type,generated_at,file_url,is_current')
+    .eq('candidate_id',candidateId).in('document_type',['offer_letter','internship_offer'])
+    .order('is_current',{ascending:false}).order('generated_at',{ascending:false});
   if(docsRes.data&&docsRes.data.length>0){
     var doc=docsRes.data[0];
     var dt=new Date(doc.generated_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
