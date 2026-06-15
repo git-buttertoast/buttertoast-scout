@@ -36,6 +36,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .inp:focus{border-color:var(--orange);}
 .inp::placeholder{color:var(--text3);}
 textarea.inp{resize:vertical;min-height:80px;line-height:1.5;}
+.dfield{position:relative;margin-bottom:14px;}
+.dfield .dfield-disp{margin-bottom:0;padding-right:42px;cursor:pointer;}
+.dfield-btn{position:absolute;top:0;right:0;height:100%;width:42px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text3);cursor:pointer;border-radius:0 var(--rs) var(--rs) 0;transition:color 0.15s;}
+.dfield-btn:hover{color:var(--orange);}
+.dfield-native{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;bottom:0;right:36px;border:none;padding:0;margin:0;}
 select.inp option{background:var(--bg3);}
 .bred{width:100%;background:var(--orange);color:#fff;border:none;border-radius:var(--rs);padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:6px;transition:opacity 0.15s;}
 .bred:hover{opacity:0.88;}
@@ -609,8 +614,11 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
           <div class="frow"><label class="lbl">IFSC Code</label><input class="inp" id="kyc-ifsc" placeholder="HDFC0001234"/></div>
           <div class="frow"><label class="lbl">Date of Birth</label>
             <div style="position:relative;width:100%">
-              <input type="text" class="inp" id="kyc-dob-display" readonly placeholder="Select date" style="cursor:pointer"/>
-              <input type="date" id="kyc-dob" onchange="document.getElementById('kyc-dob-display').value=fmtDateShort(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
+              <div class="dfield" data-dfield="kyc-dob">
+                <input type="text" class="inp dfield-disp" id="kyc-dob-display" readonly placeholder="Select date" onclick="openDateField('kyc-dob')"/>
+                <button type="button" class="dfield-btn" tabindex="-1" onclick="openDateField('kyc-dob')" aria-label="Open calendar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+                <input type="date" id="kyc-dob" class="dfield-native" onchange="syncDateField('kyc-dob')"/>
+              </div>
             </div>
           </div>
           <div class="frow" style="grid-column:1/-1"><label class="lbl">Emergency Contact Name</label><input class="inp" id="kyc-emergency-name" placeholder="Full name"/></div>
@@ -873,8 +881,11 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
       </div>
       <div class="frow"><label class="lbl">Joining Date *</label>
         <div style="position:relative;width:100%">
-          <input type="text" class="inp" id="offer-joining-display" readonly placeholder="Select date" style="cursor:pointer"/>
-          <input type="date" id="offer-joining" onchange="document.getElementById('offer-joining-display').value=fmtDateShort(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
+          <div class="dfield" data-dfield="offer-joining">
+            <input type="text" class="inp dfield-disp" id="offer-joining-display" readonly placeholder="Select date" onclick="openDateField('offer-joining')"/>
+            <button type="button" class="dfield-btn" tabindex="-1" onclick="openDateField('offer-joining')" aria-label="Open calendar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+            <input type="date" id="offer-joining" class="dfield-native" onchange="syncDateField('offer-joining')"/>
+          </div>
         </div>
       </div>
       <div class="fgrid">
@@ -911,15 +922,17 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
       </div>
       <div class="fgrid">
         <div class="frow"><label class="lbl">Joining Date *</label>
-          <div style="position:relative;width:100%">
-            <input type="text" class="inp" id="appoint-joining-display" readonly placeholder="Select date" style="cursor:pointer"/>
-            <input type="date" id="appoint-joining" onchange="onAppointJoiningChange(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
+          <div class="dfield" data-dfield="appoint-joining">
+            <input type="text" class="inp dfield-disp" id="appoint-joining-display" readonly placeholder="Select date" onclick="openDateField('appoint-joining')"/>
+            <button type="button" class="dfield-btn" tabindex="-1" onclick="openDateField('appoint-joining')" aria-label="Open calendar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+            <input type="date" id="appoint-joining" class="dfield-native" onchange="syncDateField('appoint-joining');onAppointJoiningChange(this.value)"/>
           </div>
         </div>
         <div class="frow"><label class="lbl">Probation Ends *</label>
-          <div style="position:relative;width:100%">
-            <input type="text" class="inp" id="appoint-probation-display" readonly placeholder="Auto (joining + 3 months)" style="cursor:pointer"/>
-            <input type="date" id="appoint-probation" onchange="document.getElementById('appoint-probation-display').value=fmtDateShort(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
+          <div class="dfield" data-dfield="appoint-probation">
+            <input type="text" class="inp dfield-disp" id="appoint-probation-display" readonly placeholder="Auto (joining + 3 months)" onclick="openDateField('appoint-probation')"/>
+            <button type="button" class="dfield-btn" tabindex="-1" onclick="openDateField('appoint-probation')" aria-label="Open calendar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+            <input type="date" id="appoint-probation" class="dfield-native" onchange="syncDateField('appoint-probation')"/>
           </div>
         </div>
       </div>
@@ -954,14 +967,20 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
       <div class="frow"><label class="lbl">Monthly Stipend *</label><input class="inp" id="intern-offer-stipend" type="number" placeholder="e.g. 8000"/></div>
       <div class="frow"><label class="lbl">Joining Date *</label>
         <div style="position:relative;width:100%">
-          <input type="text" class="inp" id="intern-offer-joining-display" readonly placeholder="Select date" style="cursor:pointer"/>
-          <input type="date" id="intern-offer-joining" onchange="document.getElementById('intern-offer-joining-display').value=fmtDateShort(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
+          <div class="dfield" data-dfield="intern-offer-joining">
+            <input type="text" class="inp dfield-disp" id="intern-offer-joining-display" readonly placeholder="Select date" onclick="openDateField('intern-offer-joining')"/>
+            <button type="button" class="dfield-btn" tabindex="-1" onclick="openDateField('intern-offer-joining')" aria-label="Open calendar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+            <input type="date" id="intern-offer-joining" class="dfield-native" onchange="syncDateField('intern-offer-joining')"/>
+          </div>
         </div>
       </div>
       <div class="frow"><label class="lbl">Internship End Date *</label>
         <div style="position:relative;width:100%">
-          <input type="text" class="inp" id="intern-offer-end-display" readonly placeholder="Select date" style="cursor:pointer"/>
-          <input type="date" id="intern-offer-end" onchange="document.getElementById('intern-offer-end-display').value=fmtDateShort(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"/>
+          <div class="dfield" data-dfield="intern-offer-end">
+            <input type="text" class="inp dfield-disp" id="intern-offer-end-display" readonly placeholder="Select date" onclick="openDateField('intern-offer-end')"/>
+            <button type="button" class="dfield-btn" tabindex="-1" onclick="openDateField('intern-offer-end')" aria-label="Open calendar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+            <input type="date" id="intern-offer-end" class="dfield-native" onchange="syncDateField('intern-offer-end')"/>
+          </div>
         </div>
       </div>
       <div class="frow"><label class="lbl">Reporting Manager *</label>
@@ -1768,11 +1787,11 @@ async function openOnboarding(obId){
       var dbKey={'aadhaar':'aadhaar_number','pan':'pan_number','bank':'bank_name','acc':'account_number','ifsc':'ifsc_code','emergencyName':'emergency_contact_name','emergencyPhone':'emergency_contact_phone','emergencyRel':'emergency_contact_relation'}[key]||key;
       if(el)el.value=k[dbKey]||'';
     });
-    if(k.date_of_birth){document.getElementById('kyc-dob').value=k.date_of_birth;document.getElementById('kyc-dob-display').value=fmtDateShort(k.date_of_birth);}
+    if(k.date_of_birth){setDateField('kyc-dob',k.date_of_birth);}
     var addrEl=document.getElementById('kyc-address');if(addrEl)addrEl.value=k.permanent_address||'';
   } else {
     ['aadhaar','pan','bank','acc','ifsc','emergency-name','emergency-phone','emergency-rel'].forEach(function(f){var el=document.getElementById('kyc-'+f);if(el)el.value='';});
-    document.getElementById('kyc-dob').value='';document.getElementById('kyc-dob-display').value='';document.getElementById('kyc-address').value='';
+    setDateField('kyc-dob','');document.getElementById('kyc-address').value='';
   }
   var docsRes=await db.from('employee_documents').select('*').eq('candidate_id',ob.candidate_id).order('created_at',{ascending:false});
   var docsEl=document.getElementById('ob-docs-list');
@@ -2497,10 +2516,8 @@ function openInternshipOfferModal(candidateId){
   var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
   var role=c?ALL_ROLES.find(function(x){return x.id===c.role_id;}):null;
   document.getElementById('intern-offer-cand-id').value=candidateId;
-  document.getElementById('intern-offer-joining').value=new Date().toISOString().split('T')[0];
-  document.getElementById('intern-offer-joining-display').value=fmtDateShort(new Date().toISOString().split('T')[0]);
-  document.getElementById('intern-offer-end').value='';
-  document.getElementById('intern-offer-end-display').value='';
+  setDateField('intern-offer-joining',new Date().toISOString().split('T')[0]);
+  setDateField('intern-offer-end','');
   var sub=document.getElementById('intern-offer-role-sub');
   if(sub)sub.textContent=role?role.title+(role.department?' \u00b7 '+(DEPT_DISPLAY[role.department]||role.department):''):'';
   fillManagerDropdown('intern-offer-reports-to');
@@ -2619,8 +2636,7 @@ function openOfferModal(candidateId){
   var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
   var role=c?ALL_ROLES.find(function(x){return x.id===c.role_id;}):null;
   document.getElementById('offer-cand-id').value=candidateId;
-  document.getElementById('offer-joining').value='';
-  document.getElementById('offer-joining-display').value='';
+  setDateField('offer-joining','');
   document.getElementById('offer-ctc').value='';
   document.getElementById('offer-confirmed-ctc').value='';
   // Populate reporting-manager dropdown from active employees.
@@ -2756,10 +2772,8 @@ function openAppointmentModal(candidateId){
   document.getElementById('appoint-cand-id').value=candidateId;
   document.getElementById('appoint-ctc').value='';
   document.getElementById('appoint-confirmed-ctc').value='';
-  document.getElementById('appoint-joining').value='';
-  document.getElementById('appoint-joining-display').value='';
-  document.getElementById('appoint-probation').value='';
-  document.getElementById('appoint-probation-display').value='';
+  setDateField('appoint-joining','');
+  setDateField('appoint-probation','');
   fillManagerDropdown('appoint-reports-to');
   document.getElementById('appoint-duties').value=dutiesFromJD(c);
   openM('m-appoint');
@@ -2767,13 +2781,10 @@ function openAppointmentModal(candidateId){
 
 // When joining date is set, default probation end to joining + 3 months (editable).
 function onAppointJoiningChange(val){
-  document.getElementById('appoint-joining-display').value=fmtDateShort(val);
   if(val){
     var d=new Date(val+'T00:00:00');
     d.setMonth(d.getMonth()+3);
-    var iso=d.toISOString().split('T')[0];
-    document.getElementById('appoint-probation').value=iso;
-    document.getElementById('appoint-probation-display').value=fmtDateShort(iso);
+    setDateField('appoint-probation',d.toISOString().split('T')[0]);
   }
 }
 
@@ -3159,10 +3170,39 @@ function downloadJD(id){
   toast('JD downloaded.');
 }
 
-// ---- iOS DATE INPUT FIX (auto-wrap bare date inputs) ----
+// ---- RELIABLE DATE FIELD ----
+// Visible read-only text field shows the formatted date; a visible calendar icon
+// (and clicking the field) opens the native picker via showPicker(), with a
+// graceful fallback for older browsers. Replaces the fragile opacity:0 overlay.
+function openDateField(dateId){
+  var inp=document.getElementById(dateId);
+  if(!inp)return;
+  try{
+    if(typeof inp.showPicker==='function'){inp.showPicker();return;}
+  }catch(e){}
+  // Fallback: focus + click the native input
+  inp.focus(); inp.click();
+}
+function syncDateField(dateId){
+  var inp=document.getElementById(dateId);
+  var disp=document.getElementById(dateId+'-display');
+  if(inp&&disp)disp.value=inp.value?fmtDateShort(inp.value):'';
+  // fire any declared onchange handler
+  if(inp){
+    var fn=inp.getAttribute('data-onchange');
+    if(fn){try{ (new Function('value',fn))(inp.value); }catch(e){console.error('date onchange',e);} }
+  }
+}
+function setDateField(dateId,isoVal){
+  var inp=document.getElementById(dateId);
+  var disp=document.getElementById(dateId+'-display');
+  if(inp)inp.value=isoVal||'';
+  if(disp)disp.value=isoVal?fmtDateShort(isoVal):'';
+}
+
 var _dfxList=[];
 function fixDateInputs(){
-  var inputs=document.querySelectorAll('input[type="date"]:not([data-dfx])');
+  var inputs=document.querySelectorAll('input[type="date"]:not([data-dfx]):not(.dfield-native)');
   inputs.forEach(function(inp){
     if(inp.closest('[data-dfx-wrap]')){inp.setAttribute('data-dfx','1');return;}
     var st=inp.getAttribute('style')||'';
