@@ -1009,7 +1009,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
     <div class="fsec">
       <h4>Employment</h4>
       <div class="fgrid">
-        <div class="frow"><label class="lbl">Employee ID</label><input class="inp" id="conv-emp-id" placeholder="e.g. 0011"/></div>
+        <div class="frow"><label class="lbl">Employee ID <span style="color:var(--text3);font-size:10px;">(auto-assigned)</span></label><div class="inp" id="conv-emp-id-display" style="color:var(--text2);cursor:default;">--</div><input type="hidden" id="conv-emp-id"/></div>
         <div class="frow"><label class="lbl">Joining date</label><input class="inp" id="conv-joining" type="date"/></div>
       </div>
       <div class="frow"><label class="lbl">Company Email <span style="color:var(--text3);font-size:10px;">(login email — must be @buttertoast.co)</span></label><input class="inp" id="conv-email" type="email" placeholder="firstname@buttertoast.co"/></div>
@@ -2949,8 +2949,12 @@ async function openConvertModal(candidateId){
   document.getElementById('conv-seniority').value=(role&&role.seniority_level)?role.seniority_level:'';
   updateConvDesig();
 
-  // Employee ID: suggest the next sequential number (highest existing + 1).
-  document.getElementById('conv-emp-id').value=await suggestNextEmployeeId();
+  // Employee ID: auto-assign the next sequential number (highest existing + 1).
+  // Read-only — the user never types this.
+  var nextId=await suggestNextEmployeeId();
+  document.getElementById('conv-emp-id').value=nextId;
+  var idDisp=document.getElementById('conv-emp-id-display');
+  if(idDisp)idDisp.textContent=nextId||'--';
 
   // Company email suggestion (editable; staff log in with @buttertoast.co).
   var firstName=(c.full_name||'').trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g,'');
@@ -3005,8 +3009,12 @@ async function doConvert(){
   var dept=document.getElementById('conv-dept').value;
   var empType=document.getElementById('conv-type').value;
 
-  if(!empId||!joining||!desig||!role||!seniority){
-    toast('Employee ID, joining date, role, seniority and designation are required.','fail');
+  if(!empId){
+    toast('Could not auto-assign an employee ID. Reopen the modal and try again.','fail');
+    return;
+  }
+  if(!joining||!desig||!role||!seniority){
+    toast('Joining date, role, seniority and designation are required.','fail');
     return;
   }
   var companyEmail=document.getElementById('conv-email').value.trim().toLowerCase();
