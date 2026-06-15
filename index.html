@@ -106,6 +106,9 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 .pipe-count{font-size:11px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:1px 7px;}
 .pipe-cards{display:flex;flex-direction:column;gap:7px;min-height:60px;}
 .ccard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 13px;cursor:pointer;transition:border-color 0.15s,background 0.15s;}
+.ccard[draggable="true"]{cursor:grab;}
+.ccard.dragging{opacity:0.45;cursor:grabbing;border-color:var(--orange);}
+.pipe-col.drop-target{background:rgba(255,122,26,0.06);border-radius:var(--r);outline:1.5px dashed var(--orange);outline-offset:-2px;}
 .ccard:hover{border-color:var(--border2);background:var(--bg3);}
 .ccard-name{font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;}
 .ccard-role{font-size:11px;color:var(--text2);margin-bottom:8px;}
@@ -185,6 +188,9 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 .stage-btn{font-size:11px;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-family:inherit;transition:all 0.12s;}
 .stage-btn:hover{border-color:var(--border2);color:var(--text);}
 .stage-btn.current{background:var(--orange);border-color:var(--orange);color:#fff;}
+.dir-chip{font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-family:inherit;transition:all 0.12s;}
+.dir-chip:hover{border-color:var(--border2);color:var(--text);}
+.dir-chip.active{background:var(--orange);border-color:var(--orange);color:#fff;}
 .notes-area{background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px;font-size:13px;color:var(--text);width:100%;min-height:80px;resize:vertical;font-family:inherit;outline:none;transition:border-color 0.15s;line-height:1.5;}
 .notes-area:focus{border-color:var(--orange);}
 .activity-item{display:flex;gap:10px;margin-bottom:10px;}
@@ -568,7 +574,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
       </div>
       <div class="filters-row">
         <input class="search-inp" id="dir-search" placeholder="Search name..." oninput="renderDirectory()"/>
-        <select class="fsel" id="dir-stage-filter" onchange="renderDirectory()">
+        <select class="fsel" id="dir-stage-filter" onchange="syncDirChips();renderDirectory()">
           <option value="">All</option>
           <option value="rejected">Rejected</option>
           <option value="withdrew">Withdrew</option>
@@ -577,6 +583,12 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         <select class="fsel" id="dir-role-filter" onchange="renderDirectory()">
           <option value="">All roles</option>
         </select>
+      </div>
+      <div class="dir-chips" id="dir-chips" style="display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap;">
+        <button class="dir-chip active" data-chip="" onclick="setDirChip('')">All</button>
+        <button class="dir-chip" data-chip="hired" onclick="setDirChip('hired')">Hired</button>
+        <button class="dir-chip" data-chip="rejected" onclick="setDirChip('rejected')">Rejected</button>
+        <button class="dir-chip" data-chip="withdrew" onclick="setDirChip('withdrew')">Withdrew</button>
       </div>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Reason</th><th>Date</th><th></th></tr></thead><tbody id="dir-tbody"></tbody></table></div>
     </div>
@@ -765,6 +777,14 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
       </div>
       <div class="frow"><label class="lbl">Hire by</label>
         <input class="inp" id="r-hire-by" type="date"/>
+      </div>
+    </div>
+    <div class="fgrid">
+      <div class="frow"><label class="lbl">Number of openings</label>
+        <input class="inp" id="r-openings" type="number" min="1" step="1" placeholder="1" value="1"/>
+      </div>
+      <div class="frow"><label class="lbl">&nbsp;</label>
+        <div style="font-size:11px;color:var(--text3);padding:9px 0;">Role auto-closes when all openings are filled.</div>
       </div>
     </div>
     <div class="frow"><label class="lbl">Budget (tentative)</label><input class="inp" id="r-budget" placeholder="e.g. &#8377;4&ndash;6 LPA or &#8377;15,000/month stipend"/></div>
@@ -1483,12 +1503,12 @@ function renderPipeline(){
   var html='';
   STAGES.filter(function(s){return s.key!=='hired'&&s.key!=='rejected'&&s.key!=='withdrew';}).forEach(function(s){
     var cards=active.filter(function(c){return c.stage===s.key;});
-    html+='<div class="pipe-col">'+
+    html+='<div class="pipe-col" data-stage="'+s.key+'" ondragover="pipeDragOver(event,this)" ondragleave="pipeDragLeave(event,this)" ondrop="pipeDrop(event,this)">'+
       '<div class="pipe-col-hd"><span class="pipe-col-title">'+s.label+'</span><span class="pipe-count">'+cards.length+'</span></div>'+
       '<div class="pipe-cards">';
-    if(!cards.length){html+='<div style="padding:12px 8px;font-size:12px;color:var(--text3);text-align:center;">Empty</div>';}
+    if(!cards.length){html+='<div class="pipe-empty" style="padding:12px 8px;font-size:12px;color:var(--text3);text-align:center;">Empty</div>';}
     cards.forEach(function(c){
-      html+='<div class="ccard stage-'+s.key+'" onclick="openCandidate(\''+c.id+'\')">'+
+      html+='<div class="ccard stage-'+s.key+'" draggable="true" data-cid="'+c.id+'" ondragstart="pipeDragStart(event,this)" ondragend="pipeDragEnd(event,this)" onclick="if(!window.__pipeDragging)openCandidate(\''+c.id+'\')">'+
         '<div class="ccard-name">'+esc(c.full_name)+'</div>'+
         '<div class="ccard-role">'+esc(rName(c.role_id))+'</div>'+
         '<div class="ccard-meta">'+
@@ -1501,13 +1521,48 @@ function renderPipeline(){
   document.getElementById('pipeline-board').innerHTML=html;
 }
 
+// ── Pipeline drag-and-drop ────────────────────────────────────────────────────
+var __pipeDragCid=null;
+function pipeDragStart(e,el){
+  __pipeDragCid=el.dataset.cid;
+  window.__pipeDragging=true;
+  el.classList.add('dragging');
+  try{e.dataTransfer.setData('text/plain',el.dataset.cid);e.dataTransfer.effectAllowed='move';}catch(_){}
+}
+function pipeDragEnd(e,el){
+  el.classList.remove('dragging');
+  // Defer clearing so the click handler (fired after dragend) is suppressed.
+  setTimeout(function(){window.__pipeDragging=false;},50);
+  document.querySelectorAll('.pipe-col.drop-target').forEach(function(c){c.classList.remove('drop-target');});
+}
+function pipeDragOver(e,col){
+  e.preventDefault();
+  try{e.dataTransfer.dropEffect='move';}catch(_){}
+  col.classList.add('drop-target');
+}
+function pipeDragLeave(e,col){
+  // Only clear if leaving the column entirely (not moving between children).
+  if(!col.contains(e.relatedTarget))col.classList.remove('drop-target');
+}
+function pipeDrop(e,col){
+  e.preventDefault();
+  col.classList.remove('drop-target');
+  var cid=__pipeDragCid||(e.dataTransfer&&e.dataTransfer.getData('text/plain'));
+  var newStage=col.dataset.stage;
+  __pipeDragCid=null;
+  if(!cid||!newStage)return;
+  var cand=ALL_CANDIDATES.find(function(c){return c.id===cid;});
+  if(!cand||cand.stage===newStage)return;
+  moveStage(cid,newStage,true);
+}
+
 // ── CANDIDATES ────────────────────────────────────────────────────────────────
 function renderCandidates(){
   var q=(document.getElementById('cand-search').value||'').toLowerCase();
   var sf=document.getElementById('cand-stage-filter').value;
   var rf=document.getElementById('cand-role-filter').value;
   var filtered=ALL_CANDIDATES.filter(function(c){
-    if(c.stage==='rejected'||c.stage==='withdrew')return false;
+    if(c.stage==='rejected'||c.stage==='withdrew'||c.stage==='hired')return false;
     if(q&&!(c.full_name||'').toLowerCase().includes(q)&&!(c.email||'').toLowerCase().includes(q))return false;
     if(sf&&c.stage!==sf)return false;
     if(rf&&c.role_id!==rf)return false;
@@ -1540,19 +1595,44 @@ function renderRoles(){
   if(!ALL_ROLES.length){html='<div class="empty">No roles yet. Add your first open position.</div>';}
   ALL_ROLES.forEach(function(r){
     var count=ALL_CANDIDATES.filter(function(c){return c.role_id===r.id&&c.stage!=='hired'&&c.stage!=='rejected'&&c.stage!=='withdrew';}).length;
+    var hiredCount=ALL_CANDIDATES.filter(function(c){return c.role_id===r.id&&c.stage==='hired';}).length;
+    var openings=(r.openings==null?1:r.openings);
+    var hasJd=!!r.jd_template_id;
+    var fillStr=openings>0?(hiredCount+'/'+openings+' filled'):'';
     html+='<div class="role-card">'+
       '<div class="role-card-left">'+
         '<h3>'+esc(r.title)+'</h3>'+
-        '<p>'+(r.department?'<span class="dept-chip">'+esc(DEPT_DISPLAY[r.department]||r.department)+'</span> ':'')+(r.employment_type?esc(r.employment_type):'')+(count?' &mdash; '+count+' active':' &mdash; no active candidates')+'</p>'+
+        '<p>'+(r.department?'<span class="dept-chip">'+esc(DEPT_DISPLAY[r.department]||r.department)+'</span> ':'')+(r.employment_type?esc(r.employment_type):'')+(count?' &mdash; '+count+' active':' &mdash; no active candidates')+(fillStr?' &mdash; '+fillStr:'')+'</p>'+
       '</div>'+
       '<div class="role-card-right">'+
         '<span class="pill p-'+r.status+'">'+r.status.replace('_',' ')+'</span>'+
+        '<button class="btn bg2x bsm" data-rid="'+r.id+'" onclick="copyRoleJD(this.dataset.rid)"'+(hasJd?'':' disabled title="No JD linked to this role"')+' style="'+(hasJd?'':'opacity:0.4;cursor:not-allowed;')+'">Copy JD</button>'+
         '<button class="btn bg2x bsm" onclick="openEditRole(\''+r.id+'\')">Edit</button>'+
         '<button class="btn bg2x bsm" onclick="openAddCandidate(\''+r.id+'\')">+ Candidate</button>'+
       '</div>'+
       '</div>';
   });
   document.getElementById('roles-body').innerHTML=html;
+}
+
+// Copy a role's linked JD template content to the clipboard.
+async function copyRoleJD(roleId){
+  var role=ALL_ROLES.find(function(x){return x.id===roleId;});
+  if(!role||!role.jd_template_id){toast('No JD linked to this role.','fail');return;}
+  var jd=ALL_JDS.find(function(j){return j.id===role.jd_template_id;});
+  if(!jd||!jd.content){toast('Linked JD has no content.','fail');return;}
+  // Compose a clean, paste-ready JD: title + content (+ role-specific notes if any).
+  var text=(jd.title?jd.title+'\n\n':'')+jd.content+(role.description?'\n\n'+role.description:'');
+  try{
+    await navigator.clipboard.writeText(text);
+    toast('JD copied to clipboard.');
+  }catch(e){
+    // Fallback for browsers blocking clipboard API
+    var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');toast('JD copied to clipboard.');}catch(e2){toast('Could not copy JD.','fail');}
+    document.body.removeChild(ta);
+  }
 }
 
 // ── ASSIGNMENTS ───────────────────────────────────────────────────────────────
@@ -2001,6 +2081,24 @@ async function onConvertEmployeeSuccess(employeeId,candidateId){
     if(ob.drive_folder_url)autoKeys.push('drive_folder');
     await autoCompleteSteps(ob.id,autoKeys);
   }
+  // Auto-close the role if all its openings are now filled. The just-hired
+  // candidate's stage is 'hired'; count hired against the role's openings.
+  await maybeCloseRole(candidateId);
+}
+
+// Close a role automatically once its hired count reaches its number of openings.
+async function maybeCloseRole(candidateId){
+  var cand=ALL_CANDIDATES.find(function(c){return c.id===candidateId;});
+  if(!cand||!cand.role_id)return;
+  var role=ALL_ROLES.find(function(r){return r.id===cand.role_id;});
+  if(!role||role.status==='closed')return;
+  var openings=(role.openings==null?1:role.openings);
+  // Count hired for this role (the just-hired candidate is already 'hired' in memory).
+  var hiredCount=ALL_CANDIDATES.filter(function(c){return c.role_id===role.id&&c.stage==='hired';}).length;
+  if(hiredCount>=openings){
+    var r=await db.from('scout_roles').update({status:'closed'}).eq('id',role.id);
+    if(!r.error){role.status='closed';toast('Role "'+role.title+'" closed — all openings filled.');}
+  }
 }
 
 // Mark specific checklist steps complete by step_key (idempotent).
@@ -2137,9 +2235,9 @@ function openCandidate(id){
   loadCandidateAsyncData(id);
 }
 
-async function moveStage(candidateId,stage){
+async function moveStage(candidateId,stage,fromDrag){
   if(stage==='rejected'||stage==='withdrew'){openReasonModal(candidateId,stage);return;}
-  confirmMoveStage(candidateId,stage,null);
+  confirmMoveStage(candidateId,stage,null,fromDrag);
 }
 
 var PENDING_REASON={id:null,stage:null};
@@ -2197,7 +2295,7 @@ async function createOnboardingEntry(candidateId){
   return{ok:true};
 }
 
-async function confirmMoveStage(candidateId,stage,reason){
+async function confirmMoveStage(candidateId,stage,reason,fromDrag){
   // Hired is system-only — only the convert-to-employee flow may set it.
   // Block any manual attempt to move a candidate to Hired.
   if(stage==='hired'){
@@ -2224,12 +2322,24 @@ async function confirmMoveStage(candidateId,stage,reason){
     toast('Stage updated to '+stageLabel(stage));
   }
   closeM('m-reason');
-  openCandidate(candidateId);
+  if(!fromDrag)openCandidate(candidateId);
   renderDashboard();
   var ap=document.querySelector('.page.show');
   if(ap&&ap.id==='page-pipeline')renderPipeline();
   if(ap&&ap.id==='page-candidates')renderCandidates();
   if(ap&&ap.id==='page-directory')renderDirectory();
+}
+
+function setDirChip(stage){
+  document.getElementById('dir-stage-filter').value=stage;
+  syncDirChips();
+  renderDirectory();
+}
+function syncDirChips(){
+  var cur=document.getElementById('dir-stage-filter').value;
+  document.querySelectorAll('#dir-chips .dir-chip').forEach(function(ch){
+    ch.classList.toggle('active',ch.dataset.chip===cur);
+  });
 }
 
 function renderDirectory(){
@@ -2466,6 +2576,7 @@ function openRoleModal(){
   document.getElementById('r-status').value='open';
   document.getElementById('r-budget').value='';
   document.getElementById('r-hire-by').value='';
+  document.getElementById('r-openings').value='1';
   document.getElementById('r-jd').value='';
   populateJDDropdown('','');
   openM('m-role');
@@ -2486,6 +2597,7 @@ function openEditRole(id){
   document.getElementById('r-status').value=r.status||'open';
   document.getElementById('r-budget').value=r.budget||'';
   document.getElementById('r-hire-by').value=r.hire_by_date||'';
+  document.getElementById('r-openings').value=(r.openings==null?1:r.openings);
   populateJDDropdown(r.role_type||'',r.seniority_level||'');
   document.getElementById('r-jd').value=r.jd_template_id||'';
   // Update notes label
@@ -2500,7 +2612,9 @@ async function saveRole(){
   if(!title){toast('Title is required.','fail');return;}
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
   var id=document.getElementById('r-id').value;
-  var payload={title:title,role_type:document.getElementById('r-role-type').value||null,seniority_level:document.getElementById('r-seniority').value||null,department:document.getElementById('r-dept').value||null,employment_type:document.getElementById('r-type').value,description:document.getElementById('r-desc').value.trim()||null,budget:document.getElementById('r-budget').value.trim()||null,hire_by_date:document.getElementById('r-hire-by').value||null,jd_template_id:document.getElementById('r-jd').value||null,status:document.getElementById('r-status').value};
+  var openingsVal=parseInt(document.getElementById('r-openings').value,10);
+  if(isNaN(openingsVal)||openingsVal<1)openingsVal=1;
+  var payload={title:title,role_type:document.getElementById('r-role-type').value||null,seniority_level:document.getElementById('r-seniority').value||null,department:document.getElementById('r-dept').value||null,employment_type:document.getElementById('r-type').value,description:document.getElementById('r-desc').value.trim()||null,budget:document.getElementById('r-budget').value.trim()||null,hire_by_date:document.getElementById('r-hire-by').value||null,jd_template_id:document.getElementById('r-jd').value||null,status:document.getElementById('r-status').value,openings:openingsVal};
   var r=id?await db.from('scout_roles').update(payload).eq('id',id):await db.from('scout_roles').insert({...payload,created_by:ME.id});
   btn.disabled=false; btn.innerHTML='Save role';
   if(r.error){toast('Failed to save.','fail');return;}
