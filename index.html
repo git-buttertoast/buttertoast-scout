@@ -1023,6 +1023,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         <div class="frow"><label class="lbl">Employee ID</label><input class="inp" id="conv-emp-id" placeholder="e.g. 0011"/></div>
         <div class="frow"><label class="lbl">Joining date</label><input class="inp" id="conv-joining" type="date"/></div>
       </div>
+      <div class="frow"><label class="lbl">Company Email <span style="color:var(--text3);font-size:10px;">(login email — must be @buttertoast.co)</span></label><input class="inp" id="conv-email" type="email" placeholder="firstname@buttertoast.co"/></div>
       <div class="fgrid">
         <div class="frow"><label class="lbl">Department</label>
           <select class="inp" id="conv-dept">
@@ -2904,6 +2905,11 @@ function openConvertModal(candidateId){
   document.getElementById('conv-acc').value='';
   document.getElementById('conv-ifsc').value='';
   document.getElementById('conv-emp-id').value='';
+  // Suggest a company email from the first name (editable). Do NOT use the
+  // candidate's personal/application email as the login — staff log in with
+  // their @buttertoast.co address.
+  var firstName=(c.full_name||'').trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g,'');
+  document.getElementById('conv-email').value=firstName?firstName+'@buttertoast.co':'';
   closeM('m-candidate');
   openM('m-convert');
 }
@@ -2927,7 +2933,9 @@ async function doConvert(){
     toast('Employee ID, joining date, role, seniority and designation are required.','fail');
     return;
   }
-  if(!c.email){toast('Candidate must have an email address to create an employee account.','fail');return;}
+  var companyEmail=document.getElementById('conv-email').value.trim().toLowerCase();
+  if(!companyEmail){toast('Company email is required for the login account.','fail');return;}
+  if(companyEmail.indexOf('@')===-1){toast('Enter a valid company email.','fail');return;}
 
   btn.disabled=true; spin.style.display='inline-block';
 
@@ -2955,7 +2963,7 @@ async function doConvert(){
     var payload={
       candidateId: candId,
       fullName: c.full_name,
-      email: c.email,
+      email: companyEmail,
       employeeId: empId,
       joiningDate: joining,
       role: role,
