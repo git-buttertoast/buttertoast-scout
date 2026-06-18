@@ -776,7 +776,11 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         </select>
       </div>
       <div class="frow"><label class="lbl">Hire by</label>
-        <input class="inp" id="r-hire-by" type="date"/>
+        <div class="dfield" data-dfield="r-hire-by">
+          <input type="text" class="inp dfield-disp" id="r-hire-by-display" readonly placeholder="Select date" onclick="openDateField('r-hire-by')"/>
+          <button type="button" class="dfield-btn" tabindex="-1" onclick="openDateField('r-hire-by')" aria-label="Open calendar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+          <input type="date" id="r-hire-by" class="dfield-native" onchange="syncDateField('r-hire-by')"/>
+        </div>
       </div>
     </div>
     <div class="fgrid">
@@ -804,6 +808,65 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
     </div>
   </div>
 </div>
+
+<!-- ADD DEVICE MODAL (onboarding device addition; writes to employee_devices + device_history) -->
+<div class="mbg mbg-c" id="m-device">
+  <div class="modal" style="max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;">
+    <h2>Add device</h2>
+    <p class="msub">Assign a device to this employee. This writes to the shared device register, so it also appears in Stock.</p>
+    <input type="hidden" id="dev-obid"/>
+    <input type="hidden" id="dev-pid"/>
+    <input type="hidden" id="dev-cid"/>
+    <div class="fgrid">
+      <div class="frow"><label class="lbl">Ownership</label>
+        <select class="inp" id="dev-ownership" onchange="onDevOwnershipChange()">
+          <option value="company">Company owned</option>
+          <option value="personal">Personal (BYOD)</option>
+        </select>
+      </div>
+      <div class="frow"><label class="lbl">Device type</label>
+        <select class="inp" id="dev-type">
+          <option value="laptop">Laptop</option><option value="desktop">Desktop</option>
+          <option value="monitor">Monitor</option><option value="phone">Phone</option>
+          <option value="tablet">Tablet</option><option value="accessory">Accessory</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="fgrid">
+      <div class="frow"><label class="lbl">Make</label><input class="inp" id="dev-make" placeholder="e.g. Apple"/></div>
+      <div class="frow"><label class="lbl">Model</label><input class="inp" id="dev-model" placeholder="e.g. MacBook Air M2"/></div>
+    </div>
+    <div class="fgrid">
+      <div class="frow"><label class="lbl">Serial number</label><input class="inp" id="dev-serial" placeholder="Optional"/></div>
+      <div class="frow"><label class="lbl">Condition at handover</label>
+        <select class="inp" id="dev-condition">
+          <option value="new">New</option><option value="good" selected>Good</option>
+          <option value="fair">Fair</option><option value="poor">Poor</option>
+        </select>
+      </div>
+    </div>
+    <div id="dev-company-fields">
+      <div class="fgrid">
+        <div class="frow"><label class="lbl">Purchase value (Rs)</label><input class="inp" id="dev-value" type="number" min="0" step="1" placeholder="Optional"/></div>
+        <div class="frow"><label class="lbl">Depreciation rate</label><input class="inp" id="dev-deprec" type="number" min="0" max="1" step="0.01" placeholder="0.20"/></div>
+      </div>
+      <div class="frow"><label class="lbl">Date added</label>
+        <div class="dfield" data-dfield="dev-date">
+          <input type="text" class="inp dfield-disp" id="dev-date-display" readonly placeholder="Select date" onclick="openDateField('dev-date')"/>
+          <button type="button" class="dfield-btn" tabindex="-1" onclick="openDateField('dev-date')" aria-label="Open calendar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+          <input type="date" id="dev-date" class="dfield-native" onchange="syncDateField('dev-date')"/>
+        </div>
+      </div>
+    </div>
+    <div class="frow"><label class="lbl">Notes</label><textarea class="inp" id="dev-notes" placeholder="Anything specific about this device..." style="min-height:60px;"></textarea></div>
+    <div class="mf" style="position:sticky;bottom:0;background:var(--bg2);padding:12px 0 0;margin-top:8px;border-top:1px solid var(--border);">
+      <button class="btn bg2x" onclick="closeM('m-device')">Cancel</button>
+      <button class="btn bp" id="btn-save-device" onclick="saveDevice()"><span class="spin" id="dev-spin" style="display:none"></span>Add device</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- ADD/EDIT ASSIGNMENT MODAL -->
 <div class="mbg mbg-c" id="m-assignment">
@@ -1019,8 +1082,8 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 <!-- CONVERT TO EMPLOYEE MODAL -->
 <div class="mbg mbg-c" id="m-convert">
   <div class="modal convert-modal">
-    <h2>Convert to employee</h2>
-    <p class="msub">Review and confirm to create the employee account in Roster. KYC is pulled from the onboarding KYC tab.</p>
+    <h2>Activate employee</h2>
+    <p class="msub">Review and confirm to activate this employee in Roster. KYC is pulled from the onboarding KYC tab.</p>
     <input type="hidden" id="conv-cand-id"/>
     <div class="fsec">
       <h4>KYC on file</h4>
@@ -1030,7 +1093,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
       <h4>Employment</h4>
       <div class="fgrid">
         <div class="frow"><label class="lbl">Employee ID <span style="color:var(--text3);font-size:10px;">(auto-assigned)</span></label><div class="inp" id="conv-emp-id-display" style="color:var(--text2);cursor:default;">--</div><input type="hidden" id="conv-emp-id"/></div>
-        <div class="frow"><label class="lbl">Joining date</label><input class="inp" id="conv-joining" type="date"/></div>
+        <div class="frow"><label class="lbl">Joining date</label><div class="dfield" data-dfield="conv-joining"><input type="text" class="inp dfield-disp" id="conv-joining-display" readonly placeholder="Select date" onclick="openDateField('conv-joining')"/><button type="button" class="dfield-btn" tabindex="-1" onclick="openDateField('conv-joining')" aria-label="Open calendar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button><input type="date" id="conv-joining" class="dfield-native" onchange="syncDateField('conv-joining')"/></div></div>
       </div>
       <div class="frow"><label class="lbl">Company Email <span style="color:var(--text3);font-size:10px;">(login email — must be @buttertoast.co)</span></label><input class="inp" id="conv-email" type="email" placeholder="firstname@buttertoast.co"/></div>
       <div class="fgrid">
@@ -1096,7 +1159,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
     </div>
     <div class="mf">
       <button class="btn bg2x" onclick="closeM('m-convert')">Cancel</button>
-      <button class="btn bp" id="btn-convert" onclick="doConvert()"><span class="spin" id="conv-spin" style="display:none"></span>Create employee</button>
+      <button class="btn bp" id="btn-convert" onclick="doConvert()"><span class="spin" id="conv-spin" style="display:none"></span>Activate employee</button>
     </div>
   </div>
 </div>
@@ -1172,7 +1235,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
 var db = supabase.createClient('https://ferlauhakdbfpwfapxxw.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlcmxhdWhha2RiZnB3ZmFweHh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDc2MjgsImV4cCI6MjA5NTEyMzYyOH0.v7YS2YyOjftzcrDrIzeBAW-H1Xk2DB4iHQO67YF7xwQ',{auth:{storageKey:'bt-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 var ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlcmxhdWhha2RiZnB3ZmFweHh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDc2MjgsImV4cCI6MjA5NTEyMzYyOH0.v7YS2YyOjftzcrDrIzeBAW-H1Xk2DB4iHQO67YF7xwQ';
 
-var DRIVE_URL = 'https://script.google.com/macros/s/AKfycbyVbz5RdpIuwkkyqrvccttilVhxKB71BXWblIC7jrLa4k8G6pqJLMSVWzdE11iq17yvaA/exec';
+// Drive integration removed from Scout. Folders are handled in Stock.
 
 var ME = null, MY_ROLE = null;
 var ALL_CANDIDATES = [], ALL_ROLES = [], ALL_ASSIGNMENTS = [], ALL_TEMPLATES = [], ALL_JDS = [], ALL_EMPLOYEES = [];
@@ -1643,28 +1706,89 @@ function renderCandidates(){
 
 // ── ROLES ─────────────────────────────────────────────────────────────────────
 function renderRoles(){
+  var active=ALL_ROLES.filter(function(r){return r.status!=='closed';});
+  var archived=ALL_ROLES.filter(function(r){return r.status==='closed';});
   var html='';
-  if(!ALL_ROLES.length){html='<div class="empty">No roles yet. Add your first open position.</div>';}
-  ALL_ROLES.forEach(function(r){
-    var count=ALL_CANDIDATES.filter(function(c){return c.role_id===r.id&&c.stage!=='hired'&&c.stage!=='rejected'&&c.stage!=='withdrew';}).length;
-    var hiredCount=ALL_CANDIDATES.filter(function(c){return c.role_id===r.id&&c.stage==='hired';}).length;
-    var openings=(r.openings==null?1:r.openings);
-    var hasJd=!!r.jd_template_id;
-    var fillStr=openings>0?(hiredCount+'/'+openings+' filled'):'';
-    html+='<div class="role-card">'+
-      '<div class="role-card-left">'+
-        '<h3>'+esc(r.title)+'</h3>'+
-        '<p>'+(r.department?'<span class="dept-chip">'+esc(DEPT_DISPLAY[r.department]||r.department)+'</span> ':'')+(r.employment_type?esc(r.employment_type):'')+(count?' &mdash; '+count+' active':' &mdash; no active candidates')+(fillStr?' &mdash; '+fillStr:'')+'</p>'+
-      '</div>'+
-      '<div class="role-card-right">'+
-        '<span class="pill p-'+r.status+'">'+r.status.replace('_',' ')+'</span>'+
-        '<button class="btn bg2x bsm" data-rid="'+r.id+'" onclick="copyRoleJD(this.dataset.rid)"'+(hasJd?'':' disabled title="No JD linked to this role"')+' style="'+(hasJd?'':'opacity:0.4;cursor:not-allowed;')+'">Copy JD</button>'+
-        '<button class="btn bg2x bsm" onclick="openEditRole(\''+r.id+'\')">Edit</button>'+
-        '<button class="btn bg2x bsm" onclick="openAddCandidate(\''+r.id+'\')">+ Candidate</button>'+
-      '</div>'+
-      '</div>';
-  });
+  if(!active.length){
+    html+='<div class="empty">No active roles. Add your first open position.</div>';
+  }else{
+    active.forEach(function(r){
+      var count=ALL_CANDIDATES.filter(function(c){return c.role_id===r.id&&c.stage!=='hired'&&c.stage!=='rejected'&&c.stage!=='withdrew';}).length;
+      var hiredCount=ALL_CANDIDATES.filter(function(c){return c.role_id===r.id&&c.stage==='hired';}).length;
+      var openings=(r.openings==null?1:r.openings);
+      var hasJd=!!r.jd_template_id;
+      var fillStr=openings>0?(hiredCount+'/'+openings+' filled'):'';
+      html+='<div class="role-card">'+
+        '<div class="role-card-left">'+
+          '<h3>'+esc(r.title)+'</h3>'+
+          '<p>'+(r.department?'<span class="dept-chip">'+esc(DEPT_DISPLAY[r.department]||r.department)+'</span> ':'')+(r.employment_type?esc(r.employment_type):'')+(count?' - '+count+' active':' - no active candidates')+(fillStr?' - '+fillStr:'')+'</p>'+
+        '</div>'+
+        '<div class="role-card-right">'+
+          '<span class="pill p-'+r.status+'">'+r.status.replace('_',' ')+'</span>'+
+          '<button class="btn bg2x bsm" data-rid="'+r.id+'" onclick="copyRoleJD(this.dataset.rid)"'+(hasJd?'':' disabled title="No JD linked to this role"')+' style="'+(hasJd?'':'opacity:0.4;cursor:not-allowed;')+'">Copy JD</button>'+
+          '<button class="btn bg2x bsm" onclick="openEditRole(\''+r.id+'\')">Edit</button>'+
+          '<button class="btn bg2x bsm" onclick="openAddCandidate(\''+r.id+'\')">+ Candidate</button>'+
+          '<button class="btn bg2x bsm" data-rid2="'+r.id+'" onclick="cancelRole(this.dataset.rid2)" style="color:var(--amber);">Cancel role</button>'+
+        '</div>'+
+        '</div>';
+    });
+  }
+  if(archived.length){
+    html+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text3);margin:22px 0 10px;">Archived</div>';
+    archived.forEach(function(r){
+      var hiredCount=ALL_CANDIDATES.filter(function(c){return c.role_id===r.id&&c.stage==='hired';}).length;
+      var openings=(r.openings==null?1:r.openings);
+      var reason=(r.closed_reason==='cancelled')?'Cancelled':'Filled';
+      var openedStr=r.created_at?new Date(r.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'';
+      var closedStr=r.closed_at?new Date(r.closed_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'';
+      html+='<div class="role-card" style="opacity:0.75;">'+
+        '<div class="role-card-left">'+
+          '<h3>'+esc(r.title)+'</h3>'+
+          '<p>'+(r.department?'<span class="dept-chip">'+esc(DEPT_DISPLAY[r.department]||r.department)+'</span> ':'')+reason+(openedStr?' - opened '+openedStr:'')+(closedStr?' - closed '+closedStr:'')+' - '+hiredCount+'/'+openings+' hired</p>'+
+        '</div>'+
+        '<div class="role-card-right">'+
+          '<span class="pill p-closed">'+reason.toLowerCase()+'</span>'+
+          '<button class="btn bg2x bsm" data-rid3="'+r.id+'" onclick="openNewRound(this.dataset.rid3)">Open new round</button>'+
+        '</div>'+
+        '</div>';
+    });
+  }
   document.getElementById('roles-body').innerHTML=html;
+}
+
+async function cancelRole(roleId){
+  var role=ALL_ROLES.find(function(x){return x.id===roleId;});
+  if(!role)return;
+  if(!confirm('Cancel and archive the role "'+role.title+'"? You can open a new round for it later.'))return;
+  var nowTs=new Date().toISOString();
+  var r=await db.from('scout_roles').update({status:'closed',closed_reason:'cancelled',closed_at:nowTs}).eq('id',roleId);
+  if(r.error){toast('Could not cancel role.','fail');return;}
+  role.status='closed';role.closed_reason='cancelled';role.closed_at=nowTs;
+  toast('Role "'+role.title+'" archived.');
+  renderRoles();
+}
+
+function openNewRound(roleId){
+  var r=ALL_ROLES.find(function(x){return x.id===roleId;});
+  if(!r)return;
+  document.getElementById('m-role-title').textContent='Add role';
+  document.getElementById('r-id').value='';
+  document.getElementById('r-title').value=r.title||'';
+  document.getElementById('r-role-type').value=r.role_type||'';
+  document.getElementById('r-seniority').value=r.seniority_level||'';
+  document.getElementById('r-dept').value=r.department||JD_ROLE_DEPT[r.role_type]||'';
+  document.getElementById('r-req').value=r.requirements||'';
+  document.getElementById('r-type').value=r.employment_type||'permanent';
+  document.getElementById('r-desc').value=r.description||'';
+  document.getElementById('r-status').value='open';
+  document.getElementById('r-budget').value=r.budget||'';
+  setDateField('r-hire-by','');
+  document.getElementById('r-openings').value='1';
+  populateJDDropdown(r.role_type||'',r.seniority_level||'');
+  document.getElementById('r-jd').value=r.jd_template_id||'';
+  var notesLabel=document.querySelector('#r-notes-row .lbl');
+  if(notesLabel) notesLabel.textContent=r.jd_template_id?'Notes (JD attached -- add role-specific notes)':'Notes';
+  openM('m-role');
 }
 
 // Copy a role's linked JD template content to the clipboard.
@@ -1937,12 +2061,12 @@ async function openOnboarding(obId){
 // when convert runs. Everything else is a manual pre-convert step that the human
 // must complete first.
 // Onboarding checklist is organised around the convert pivot (account creation):
-//   PRE-HIRE steps gate the "Create Employee Account" button.
-//   POST-HIRE steps happen after the account exists and gate "Mark Complete".
-//   AUTO steps are ticked automatically by convert.
-var OB_PREHIRE_STEPS=['offer_communicated','kyc_collected','appointment_signed','payroll_setup'];
-var OB_POSTHIRE_STEPS=['tool_access','system_access','drive_folder','whatsapp_added','role_briefing','first_task'];
-var OB_AUTO_STEPS=['tool_access','system_access'];
+//   PRE-HIRE steps gate the "Activate Employee" button.
+//   POST-HIRE steps happen after the employee is active and gate "Mark Complete".
+//   No steps auto-tick anymore; every post-activation step is a manual action.
+var OB_PREHIRE_STEPS=['kyc_collected','appointment_signed'];
+var OB_POSTHIRE_STEPS=['email_creation','device_addition','slack_creation','whatsapp_added','role_briefing','org_structure','first_task'];
+var OB_AUTO_STEPS=[];
 
 function renderObChecklist(ob){
   var byKey={};(ob.scout_onboarding_checklist||[]).forEach(function(i){byKey[i.step_key]=i;});
@@ -1971,12 +2095,11 @@ function renderObChecklist(ob){
     label.style.cssText='font-size:13px;color:var(--text);'+(item.completed?'text-decoration:line-through':'');
     label.textContent=item.label;
     row.appendChild(checkDiv);row.appendChild(label);
-    if(item.step_key==='drive_folder'&&!item.completed){
-      var btn=document.createElement('button');
-      btn.className='btn bg2x bxs';btn.style.cssText='margin-left:auto;font-size:11px;';btn.textContent='Create folder';
-      btn.dataset.obid=ob.id;btn.dataset.cid=ob.candidate_id;
-      btn.addEventListener('click',function(e){e.stopPropagation();createDriveFolderForOnboarding(this.dataset.obid,this.dataset.cid);});
-      row.appendChild(btn);
+    if(item.step_key==='device_addition'&&!item.completed&&converted){
+      var dvbtn=document.createElement('button');
+      dvbtn.className='btn bg2x bxs';dvbtn.style.cssText='margin-left:auto;font-size:11px;';dvbtn.textContent='Add device';
+      dvbtn.addEventListener('click',function(e){e.stopPropagation();openDeviceModal(ob.id,ob.employee_id,ob.candidate_id);});
+      row.appendChild(dvbtn);
     }
     if(isAuto&&!item.completed){
       var tag=document.createElement('span');
@@ -1994,7 +2117,7 @@ function renderObChecklist(ob){
   }
 
   // ── PHASE 1: pre-hire ──
-  container.appendChild(sectionHeader('Before account creation'));
+  container.appendChild(sectionHeader('Before activation'));
   var preItems=OB_PREHIRE_STEPS.map(function(k){return byKey[k];}).filter(Boolean);
   preItems.forEach(function(it){container.appendChild(makeRow(it));});
   var preDone=preItems.length>0&&preItems.every(function(i){return i.completed;});
@@ -2006,25 +2129,25 @@ function renderObChecklist(ob){
     var cbtn=document.createElement('button');
     cbtn.className='btn bp';
     cbtn.style.cssText='width:100%;'+(preDone?'':'opacity:0.5;cursor:not-allowed;');
-    cbtn.textContent='Create Employee Account \u2192';
+    cbtn.textContent='Activate Employee \u2192';
     if(preDone){
       cbtn.onclick=function(){openConvertModal(ob.candidate_id);};
     }else{
       var remaining=preItems.filter(function(i){return !i.completed;}).length;
       cbtn.disabled=true;
-      cbtn.textContent='Complete '+remaining+' more step'+(remaining===1?'':'s')+' to create account';
+      cbtn.textContent='Complete '+remaining+' more step'+(remaining===1?'':'s')+' to activate';
     }
     pivot.appendChild(cbtn);
   }else{
     var done=document.createElement('div');
     done.style.cssText='width:100%;padding:10px 12px;border-radius:8px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.4);color:#22c55e;font-size:13px;font-weight:600;text-align:center;';
-    done.textContent='\u2713 Employee account created';
+    done.textContent='\u2713 Employee activated';
     pivot.appendChild(done);
   }
   container.appendChild(pivot);
 
   // ── PHASE 2: post-hire ──
-  container.appendChild(sectionHeader('After account creation'));
+  container.appendChild(sectionHeader('After activation'));
   var postItems=OB_POSTHIRE_STEPS.map(function(k){return byKey[k];}).filter(Boolean);
   postItems.forEach(function(it){
     var r=makeRow(it);
@@ -2084,23 +2207,6 @@ async function saveKYC(){
   toast('KYC details saved.');
 }
 
-async function createDriveFolderForOnboarding(obId,candidateId){
-  var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
-  if(!c){toast('Candidate not found.','fail');return;}
-  var r=await driveCall({action:'create_folder',folderName:c.full_name+' - Onboarding',parentFolder:'Employees'});
-  if(r&&r.folderId){
-    await db.from('scout_onboarding').update({drive_folder_url:r.folderLink||''}).eq('id',obId);
-    var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
-    if(ob&&ob.scout_onboarding_checklist){
-      var step=ob.scout_onboarding_checklist.find(function(s){return s.step_key==='drive_folder';});
-      if(step&&!step.completed)toggleChecklistItem(obId,step.id,false);
-    }
-    toast('Drive folder created.');
-  } else {
-    toast('Drive folder creation failed.','fail');
-  }
-}
-
 async function markOnboardingComplete(){
   var obId=document.getElementById('ob-id').value;
   if(!confirm('Mark this onboarding as fully complete? The employee account is already created; this just closes out the checklist.'))return;
@@ -2115,26 +2221,15 @@ async function markOnboardingComplete(){
 }
 
 async function onConvertEmployeeSuccess(employeeId,candidateId){
-  var ob=ALL_ONBOARDING.find(function(x){return x.candidate_id===candidateId;});
-  if(ob&&ob.drive_folder_url&&employeeId){
-    await db.from('employee_profiles').update({drive_folder_url:ob.drive_folder_url}).eq('id',employeeId);
-  }
+  // Link the candidate's KYC record to the new employee profile.
   if(employeeId&&candidateId){
     var kyc=await db.from('employee_kyc').select('id,profile_id').eq('candidate_id',candidateId).maybeSingle();
     if(kyc.data&&!kyc.data.profile_id){
       await db.from('employee_kyc').update({profile_id:employeeId}).eq('id',kyc.data.id);
     }
   }
-  // Convert has now created the auth user, granted app_access + roles to all core
-  // apps, and confirmed system access. Auto-tick the post-convert checklist steps
-  // so the human doesn't have to (they were never manual actions).
-  if(ob&&ob.id){
-    var autoKeys=['tool_access','system_access'];
-    if(ob.drive_folder_url)autoKeys.push('drive_folder');
-    await autoCompleteSteps(ob.id,autoKeys);
-  }
-  // Auto-close the role if all its openings are now filled. The just-hired
-  // candidate's stage is 'hired'; count hired against the role's openings.
+  // No checklist steps auto-tick on activation; every post-activation step is manual.
+  // Auto-close the role if all its openings are now filled.
   await maybeCloseRole(candidateId);
 }
 
@@ -2148,8 +2243,9 @@ async function maybeCloseRole(candidateId){
   // Count hired for this role (the just-hired candidate is already 'hired' in memory).
   var hiredCount=ALL_CANDIDATES.filter(function(c){return c.role_id===role.id&&c.stage==='hired';}).length;
   if(hiredCount>=openings){
-    var r=await db.from('scout_roles').update({status:'closed'}).eq('id',role.id);
-    if(!r.error){role.status='closed';toast('Role "'+role.title+'" closed — all openings filled.');}
+    var nowTs=new Date().toISOString();
+    var r=await db.from('scout_roles').update({status:'closed',closed_reason:'filled',closed_at:nowTs}).eq('id',role.id);
+    if(!r.error){role.status='closed';role.closed_reason='filled';role.closed_at=nowTs;toast('Role "'+role.title+'" archived - all openings filled.');}
   }
 }
 
@@ -2165,6 +2261,74 @@ async function autoCompleteSteps(obId,stepKeys){
       item.completed=true;item.completed_at=now;
     }
   }
+}
+
+// ── DEVICE ADDITION (onboarding) ──
+// Vanilla-JS device assignment for the onboarding checklist. Writes the same
+// fields Stock uses (employee_devices + device_history) so the device appears in Stock.
+function onDevOwnershipChange(){
+  var own=document.getElementById('dev-ownership').value;
+  var cf=document.getElementById('dev-company-fields');
+  if(cf)cf.style.display=(own==='company')?'block':'none';
+}
+async function openDeviceModal(obId,employeeId,candidateId){
+  var pid=employeeId;
+  if(!pid&&candidateId){
+    try{ var k=await db.from('employee_kyc').select('profile_id').eq('candidate_id',candidateId).maybeSingle(); if(k.data&&k.data.profile_id)pid=k.data.profile_id; }catch(e){}
+  }
+  if(!pid){toast('Could not find the employee record. Activate the employee first.','fail');return;}
+  document.getElementById('dev-obid').value=obId;
+  document.getElementById('dev-pid').value=pid;
+  document.getElementById('dev-cid').value=candidateId||'';
+  document.getElementById('dev-ownership').value='company';
+  document.getElementById('dev-type').value='laptop';
+  document.getElementById('dev-make').value='';
+  document.getElementById('dev-model').value='';
+  document.getElementById('dev-serial').value='';
+  document.getElementById('dev-condition').value='good';
+  document.getElementById('dev-value').value='';
+  document.getElementById('dev-deprec').value='0.20';
+  setDateField('dev-date',new Date().toISOString().split('T')[0]);
+  document.getElementById('dev-notes').value='';
+  onDevOwnershipChange();
+  openM('m-device');
+}
+async function saveDevice(){
+  var btn=document.getElementById('btn-save-device');
+  var spin=document.getElementById('dev-spin');
+  var obId=document.getElementById('dev-obid').value;
+  var pid=document.getElementById('dev-pid').value;
+  var own=document.getElementById('dev-ownership').value;
+  var make=document.getElementById('dev-make').value.trim();
+  var model=document.getElementById('dev-model').value.trim();
+  if(!pid){toast('No employee linked.','fail');return;}
+  if(!make&&!model){toast('Enter at least a make or model.','fail');return;}
+  btn.disabled=true; spin.style.display='inline-block';
+  var isCompany=own==='company';
+  var valueStr=document.getElementById('dev-value').value;
+  var deprecStr=document.getElementById('dev-deprec').value;
+  var payload={
+    profile_id:pid, ownership:own, device_type:document.getElementById('dev-type').value,
+    make:make||null, model:model||null, serial_number:document.getElementById('dev-serial').value.trim()||null,
+    imei:null, color:null, specs:null, accessories:null,
+    purchase_value:(isCompany&&valueStr)?parseFloat(valueStr):null, purchase_date:null,
+    date_added:document.getElementById('dev-date').value||null,
+    depreciation_rate:(isCompany&&deprecStr)?parseFloat(deprecStr):0.20,
+    condition_at_handover:document.getElementById('dev-condition').value, condition_notes:null,
+    status:'assigned', assigned_date:new Date().toISOString().split('T')[0],
+    notes:document.getElementById('dev-notes').value.trim()||null
+  };
+  var res=await db.from('employee_devices').insert(payload).select('id').single();
+  if(res.error||!res.data){toast('Could not save device: '+(res.error?res.error.message:'unknown'),'fail');btn.disabled=false;spin.style.display='none';return;}
+  await db.from('device_history').insert({device_id:res.data.id,profile_id:pid,event:'assigned',detail:((make+' '+model).trim()||'Device')+' assigned',condition:payload.condition_at_handover});
+  var ob=ALL_ONBOARDING.find(function(x){return x.id===obId;});
+  if(ob&&ob.scout_onboarding_checklist){
+    var step=ob.scout_onboarding_checklist.find(function(sx){return sx.step_key==='device_addition';});
+    if(step&&!step.completed)await toggleChecklistItem(obId,step.id,false);
+  }
+  btn.disabled=false; spin.style.display='none';
+  closeM('m-device');
+  toast('Device added.');
 }
 
 function switchObTab(tab){
@@ -2254,7 +2418,6 @@ function openCandidate(id){
   html+='<div class="ditem"><label>Source</label><span class="val">'+(SOURCE_LABELS[c.source]||c.source||'--')+'</span></div>';
   html+='<div class="ditem"><label>Added</label><span class="val">'+fmtAgo(c.created_at)+'</span></div>';
   if(c.linkedin_url)html+='<div class="ditem" style="grid-column:1/-1"><label>LinkedIn</label><span><a href="'+esc(c.linkedin_url)+'" target="_blank" class="link-ext">View profile &#8599;</a></span></div>';
-  if(c.drive_folder_link)html+='<div class="ditem" style="grid-column:1/-1"><label>Drive folder</label><span><a href="'+esc(c.drive_folder_link)+'" target="_blank" class="link-ext">Open folder &#8599;</a></span></div>';
   html+='</div></div>';
 
   // Actions
@@ -2331,16 +2494,15 @@ async function createOnboardingEntry(candidateId){
     return{ok:false,reason:'Could not create onboarding entry: '+(res.error?res.error.message:'no row returned')};
   }
   var steps=[
-    {step_key:'offer_communicated',label:'Offer communicated to candidate'},
     {step_key:'kyc_collected',label:'KYC & bank details collected'},
-    {step_key:'appointment_signed',label:'Appointment letter signed'},
-    {step_key:'payroll_setup',label:'Payroll set up'},
-    {step_key:'tool_access',label:'Tool access granted'},
-    {step_key:'system_access',label:'System access confirmed'},
-    {step_key:'drive_folder',label:'Drive folder created'},
-    {step_key:'whatsapp_added',label:'Added to WhatsApp and team comms'},
-    {step_key:'role_briefing',label:'Role briefing done'},
-    {step_key:'first_task',label:'First task assigned'}
+    {step_key:'appointment_signed',label:'Appointment letter'},
+    {step_key:'email_creation',label:'Email creation'},
+    {step_key:'device_addition',label:'Device addition'},
+    {step_key:'slack_creation',label:'Slack creation'},
+    {step_key:'whatsapp_added',label:'WhatsApp group addition'},
+    {step_key:'role_briefing',label:'Roles & responsibilities'},
+    {step_key:'org_structure',label:'Org structure explanation'},
+    {step_key:'first_task',label:'First task complete'}
   ];
   var cl=await db.from('scout_onboarding_checklist').insert(steps.map(function(s){return{onboarding_id:res.data.id,step_key:s.step_key,label:s.label,completed:false};}));
   if(cl.error){return{ok:false,reason:'Onboarding created but checklist failed: '+cl.error.message};}
@@ -2564,17 +2726,6 @@ async function saveCandidate(){
   } else {
     payload.stage='shortlisted'; payload.created_by=ME.id;
     r=await db.from('scout_candidates').insert(payload).select().single();
-    // Create Drive folder
-    if(!r.error&&r.data){
-      var role=ALL_ROLES.find(function(x){return x.id===roleId;});
-      driveCall({action:'create_candidate_folder',name:name,role:role?role.title:'General'}).then(function(dr){
-        if(dr&&dr.folderId){
-          db.from('scout_candidates').update({drive_folder_id:dr.folderId,drive_folder_link:dr.folderLink}).eq('id',r.data.id);
-          var c=ALL_CANDIDATES.find(function(x){return x.id===r.data.id;});
-          if(c){c.drive_folder_id=dr.folderId;c.drive_folder_link=dr.folderLink;}
-        }
-      });
-    }
   }
 
   btn.disabled=false; btn.innerHTML='Save candidate';
@@ -2627,7 +2778,7 @@ function openRoleModal(){
   document.getElementById('r-desc').value='';
   document.getElementById('r-status').value='open';
   document.getElementById('r-budget').value='';
-  document.getElementById('r-hire-by').value='';
+  setDateField('r-hire-by','');
   document.getElementById('r-openings').value='1';
   document.getElementById('r-jd').value='';
   populateJDDropdown('','');
@@ -2648,7 +2799,7 @@ function openEditRole(id){
   document.getElementById('r-desc').value=r.description||'';
   document.getElementById('r-status').value=r.status||'open';
   document.getElementById('r-budget').value=r.budget||'';
-  document.getElementById('r-hire-by').value=r.hire_by_date||'';
+  setDateField('r-hire-by',r.hire_by_date||'');
   document.getElementById('r-openings').value=(r.openings==null?1:r.openings);
   populateJDDropdown(r.role_type||'',r.seniority_level||'');
   document.getElementById('r-jd').value=r.jd_template_id||'';
@@ -2789,7 +2940,6 @@ async function generateInternshipOffer(){
     await generateDocViaStock({
       document_type:'internship_offer',
       candidate_id:candId,
-      drive_folder_id:c.drive_folder_id||null,
       employee_name:c.full_name,
       role_title:role?role.title:'',
       department:role?(DEPT_DISPLAY[role.department]||role.department):'',
@@ -2931,7 +3081,6 @@ async function generateOfferLetter(){
     await generateDocViaStock({
       document_type:'offer_letter',
       candidate_id:candId,
-      drive_folder_id:c.drive_folder_id||null,
       employee_name:c.full_name,
       role_title:role?role.title:'',
       department:role?(DEPT_DISPLAY[role.department]||role.department):'',
@@ -3058,7 +3207,6 @@ async function generateAppointmentLetter(){
     await generateDocViaStock({
       document_type:'appointment_letter',
       candidate_id:candId,
-      drive_folder_id:c.drive_folder_id||null,
       employee_name:c.full_name,
       role_title:role?role.title:'',
       department:role?(DEPT_DISPLAY[role.department]||role.department):'',
@@ -3104,7 +3252,7 @@ async function openConvertModal(candidateId){
   document.getElementById('conv-cand-id').value=candidateId;
 
   // Joining date: from the appointment-letter terms if captured, else today.
-  document.getElementById('conv-joining').value=(ob&&ob.joining_date)?ob.joining_date:new Date().toISOString().split('T')[0];
+  setDateField('conv-joining',(ob&&ob.joining_date)?ob.joining_date:new Date().toISOString().split('T')[0]);
 
   // Department / employment type: from the candidate's pipeline role.
   document.getElementById('conv-dept').value=role&&role.department?role.department:'design';
@@ -3198,26 +3346,9 @@ async function doConvert(){
     savedKyc=kq.data||null;
   }catch(e){}
 
-  // 1. Create employee Drive folder
-  var driveFolderData=null;
-  try{
-    var dr=await driveCall({action:'create_employee_folder',employeeId:empId,name:c.full_name});
-    if(dr&&!dr.error)driveFolderData=dr;
-  }catch(e){}
+  // Drive removed from Scout: folders are handled in Stock, not here.
 
-  // 1b. Copy candidate files to employee folder + rename candidate folder to [HIRED]
-  if(driveFolderData&&c.drive_folder_id){
-    try{
-      await driveCall({
-        action:'convert_candidate',
-        candidateFolderId:c.drive_folder_id,
-        employeeId:empId,
-        name:c.full_name
-      });
-    }catch(e){}
-  }
-
-  // 2. Call Edge Function to create auth user + all Roster records
+  // Call Edge Function to create auth user + all Roster records
   try{
     var payload={
       candidateId: candId,
@@ -3235,11 +3366,11 @@ async function doConvert(){
       bankName: savedKyc?savedKyc.bank_name||null:null,
       accountNumber: savedKyc?savedKyc.account_number||null:null,
       ifscCode: savedKyc?savedKyc.ifsc_code||null:null,
-      driveFolderUrl:(function(){var ob=ALL_ONBOARDING.find(function(x){return x.candidate_id===candId;});return ob?ob.drive_folder_url||null:null;})(),
-      driveFolderId: driveFolderData?driveFolderData.folderId:null,
-      driveFolderLink: driveFolderData?driveFolderData.folderLink:null,
-      companyDocsFolderId: driveFolderData?driveFolderData.companyDocsFolderId:null,
-      signedCopiesFolderId: driveFolderData?driveFolderData.signedCopiesFolderId:null,
+      driveFolderUrl: null,
+      driveFolderId: null,
+      driveFolderLink: null,
+      companyDocsFolderId: null,
+      signedCopiesFolderId: null,
       reportsTo: '13ec9b24-a840-43ff-8a65-57a47b2d0d49'
     };
 
@@ -3277,17 +3408,6 @@ async function doConvert(){
   }catch(err){
     toast('Conversion failed: '+String(err),'fail');
     btn.disabled=false; spin.style.display='none';
-  }
-}
-
-// ── DRIVE HELPER ──────────────────────────────────────────────────────────────
-async function driveCall(payload){
-  try{
-    var r=await fetch(DRIVE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    return await r.json();
-  }catch(e){
-    console.error('Drive call failed:',e);
-    return {error:e.message};
   }
 }
 
