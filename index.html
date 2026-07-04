@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Scout — Hiring</title>
+<title>Scout - Hiring</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iI2Y5NzMxNiIvPjxyZWN0IHg9IjYiIHk9IjgiIHdpZHRoPSIzIiBoZWlnaHQ9IjE2IiByeD0iMSIgZmlsbD0iI0YwRUFENiIvPjxyZWN0IHg9IjYiIHk9IjgiIHdpZHRoPSI4IiBoZWlnaHQ9IjMiIHJ4PSIxIiBmaWxsPSIjRjBFQUQ2Ii8+PHJlY3QgeD0iNiIgeT0iMjEiIHdpZHRoPSI4IiBoZWlnaHQ9IjMiIHJ4PSIxIiBmaWxsPSIjRjBFQUQ2Ii8+PHJlY3QgeD0iMjMiIHk9IjgiIHdpZHRoPSIzIiBoZWlnaHQ9IjE2IiByeD0iMSIgZmlsbD0iI0YwRUFENiIvPjxyZWN0IHg9IjE4IiB5PSI4IiB3aWR0aD0iOCIgaGVpZ2h0PSIzIiByeD0iMSIgZmlsbD0iI0YwRUFENiIvPjxyZWN0IHg9IjE4IiB5PSIyMSIgd2lkdGg9IjgiIGhlaWdodD0iMyIgcng9IjEiIGZpbGw9IiNGMEVBRDYiLz48L3N2Zz4=">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -1095,7 +1095,7 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
         <div class="frow"><label class="lbl">Employee ID <span style="color:var(--text3);font-size:10px;">(auto-assigned)</span></label><div class="inp" id="conv-emp-id-display" style="color:var(--text2);cursor:default;">--</div><input type="hidden" id="conv-emp-id"/></div>
         <div class="frow"><label class="lbl">Joining date</label><div class="dfield" data-dfield="conv-joining"><input type="text" class="inp dfield-disp" id="conv-joining-display" readonly placeholder="Select date" onclick="openDateField('conv-joining')"/><button type="button" class="dfield-btn" tabindex="-1" onclick="openDateField('conv-joining')" aria-label="Open calendar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button><input type="date" id="conv-joining" class="dfield-native" onchange="syncDateField('conv-joining')"/></div></div>
       </div>
-      <div class="frow"><label class="lbl">Company Email <span style="color:var(--text3);font-size:10px;">(login email — must be @buttertoast.co)</span></label><input class="inp" id="conv-email" type="email" placeholder="firstname@buttertoast.co"/></div>
+      <div class="frow"><label class="lbl">Company Email <span style="color:var(--text3);font-size:10px;">(login email - must be @buttertoast.co)</span></label><input class="inp" id="conv-email" type="email" placeholder="firstname@buttertoast.co"/></div>
       <div class="fgrid">
         <div class="frow"><label class="lbl">Department</label>
           <select class="inp" id="conv-dept">
@@ -1458,7 +1458,7 @@ async function loadAllData(){
   ALL_ASSIGNMENTS = aRes.data||[];
   ALL_TEMPLATES = tRes.data||[];
   ALL_JDS = jRes.data||[];
-  // Active employees only, sorted by name — used for reporting-manager dropdowns.
+  // Active employees only, sorted by name - used for reporting-manager dropdowns.
   ALL_EMPLOYEES = (eRes.data||[])
     .filter(function(e){return e.profiles&&e.profiles.is_active;})
     .map(function(e){return {id:e.id,name:e.profiles.full_name,designation:e.designation||''};})
@@ -1493,7 +1493,7 @@ function populateRoleDropdowns(){
 // ── REALTIME ──────────────────────────────────────────────────────────────────
 // Live-update the UI when Scout data changes anywhere (other tabs / other users)
 // without a manual refresh. On any change we reload data and re-render the page
-// in place — but we guard against disrupting active work (a drag in progress, or
+// in place - but we guard against disrupting active work (a drag in progress, or
 // an open modal where the user may be mid-edit).
 var SCOUT_RT_CHANNEL=null;
 var SCOUT_RT_TIMER=null;
@@ -2077,7 +2077,7 @@ async function openOnboarding(obId){
 }
 
 // Steps that happen automatically during/after the convert flow (creating the
-// employee account). These do NOT gate "Mark complete" — they get auto-ticked
+// employee account). These do NOT gate "Mark complete" - they get auto-ticked
 // when convert runs. Everything else is a manual pre-convert step that the human
 // must complete first.
 // Onboarding checklist is organised around the convert pivot (account creation):
@@ -2530,7 +2530,7 @@ async function createOnboardingEntry(candidateId){
 }
 
 async function confirmMoveStage(candidateId,stage,reason,fromDrag){
-  // Hired is system-only — only the convert-to-employee flow may set it.
+  // Hired is system-only - only the convert-to-employee flow may set it.
   // Block any manual attempt to move a candidate to Hired.
   if(stage==='hired'){
     toast('"Hired" is set automatically when you convert the candidate to an employee.','fail');
@@ -3071,7 +3071,7 @@ function fillManagerDropdown(selectId){
   ALL_EMPLOYEES.forEach(function(e){
     var o=document.createElement('option');
     o.value=e.id;
-    o.textContent=e.name+(e.designation?' — '+e.designation:'');
+    o.textContent=e.name+(e.designation?' - '+e.designation:'');
     el.appendChild(o);
   });
 }
@@ -3285,7 +3285,7 @@ async function openConvertModal(candidateId){
   updateConvDesig();
 
   // Employee ID: auto-assign the next sequential number (highest existing + 1).
-  // Read-only — the user never types this.
+  // Read-only - the user never types this.
   var nextId=await suggestNextEmployeeId();
   document.getElementById('conv-emp-id').value=nextId;
   var idDisp=document.getElementById('conv-emp-id-display');
@@ -3295,14 +3295,14 @@ async function openConvertModal(candidateId){
   var firstName=(c.full_name||'').trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g,'');
   document.getElementById('conv-email').value=firstName?firstName+'@buttertoast.co':'';
 
-  // KYC summary (read-only) — pulled from the onboarding KYC tab, never re-asked.
+  // KYC summary (read-only) - pulled from the onboarding KYC tab, never re-asked.
   var sumEl=document.getElementById('conv-kyc-summary');
   if(sumEl){
     sumEl.innerHTML='Loading KYC…';
     var kyc=await db.from('employee_kyc').select('*').eq('candidate_id',candidateId).maybeSingle();
     if(kyc.data){
       var k=kyc.data;
-      function row(lbl,val){return '<div><span style="color:var(--text3)">'+lbl+':</span> '+(val?esc(val):'<span style="color:#f59e0b">— missing —</span>')+'</div>';}
+      function row(lbl,val){return '<div><span style="color:var(--text3)">'+lbl+':</span> '+(val?esc(val):'<span style="color:#f59e0b">- missing -</span>')+'</div>';}
       sumEl.innerHTML=row('Aadhaar',k.aadhaar_number)+row('PAN',k.pan_number)+row('Bank',k.bank_name)+row('Account',k.account_number)+row('IFSC',k.ifsc_code);
       if(!k.aadhaar_number||!k.pan_number||!k.bank_name){
         sumEl.innerHTML+='<div style="margin-top:6px;color:#f59e0b;font-size:11px;">Some KYC is missing. You can still create the account and complete KYC later in the KYC tab.</div>';
