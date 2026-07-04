@@ -1404,6 +1404,15 @@ async function loadApp(user){
     MY_ROLE = (rRes.data&&rRes.data.length)?rRes.data[0].name:null;
   }
   if(!MY_ROLE&&epDept3)MY_ROLE=deptToRole(epDept3,epType3);
+    // Phase 3: app-scoped access from the resolver (closes the cross-app admin leak). Legacy stays as fallback if a user has no profile yet.
+    try{
+      var _acc=await db.rpc('my_access');
+      if(!_acc.error && _acc.data && (_acc.data.platform_admin || (_acc.data.apps && Object.keys(_acc.data.apps).length))){
+        window.MY_ACCESS=_acc.data;
+        var _a=_acc.data, _lvl=_a.platform_admin?'manage':((_a.apps&&_a.apps['scout'])||'none');
+        MY_ROLE=(_a.platform_admin||_lvl==='manage')?'admin':((_a.craft&&_a.craft!=='none')?_a.craft:((_lvl==='edit')?'account_manager':'viewer'));
+      }
+    }catch(e){}
 
   // Access check: admin, hr, technology, or business_development only
   if(MY_ROLE !== 'admin' && MY_ROLE !== 'hr'){
