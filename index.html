@@ -706,6 +706,10 @@ aside{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px 
       </div>
     </div>
     <div class="frow"><label class="lbl">LinkedIn URL</label><input class="inp" id="ac-linkedin" placeholder="https://linkedin.com/in/..."/></div>
+    <div class="fgrid">
+      <div class="frow"><label class="lbl">Salary expectation</label><input class="inp" id="ac-salary" placeholder="e.g. 8-10 LPA, negotiable"/></div>
+      <div class="frow"><label class="lbl">Resume link</label><input class="inp" id="ac-resume" placeholder="Drive / Dropbox / URL"/></div>
+    </div>
     <div class="frow"><label class="lbl">Notes</label><textarea class="inp" id="ac-notes" placeholder="Initial impression, referral details..."></textarea></div>
     <div class="mf">
       <button class="btn bg2x" onclick="closeM('m-add-candidate')">Cancel</button>
@@ -1455,6 +1459,7 @@ async function loadAllData(){
   ]);
   ALL_CANDIDATES = cRes.data||[];
   ALL_ROLES = rRes.data||[];
+  updatePipelineBadge();
   ALL_ASSIGNMENTS = aRes.data||[];
   ALL_TEMPLATES = tRes.data||[];
   ALL_JDS = jRes.data||[];
@@ -1592,6 +1597,11 @@ function setupMobile(){
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function updatePipelineBadge(){
+  var el=document.getElementById('nb-pipeline'); if(!el) return;
+  var active=ALL_CANDIDATES.filter(function(c){return c.stage!=='hired'&&c.stage!=='rejected'&&c.stage!=='withdrew';});
+  el.textContent=active.length;
+}
 function renderDashboard(){
   var active=ALL_CANDIDATES.filter(function(c){return c.stage!=='hired'&&c.stage!=='rejected'&&c.stage!=='withdrew';});
   var hired=ALL_CANDIDATES.filter(function(c){return c.stage==='hired';});
@@ -1599,7 +1609,7 @@ function renderDashboard(){
   var openRoles=ALL_ROLES.filter(function(r){return r.status==='open';});
 
   // update pipeline badge
-  document.getElementById('nb-pipeline').textContent=active.length;
+  updatePipelineBadge();
 
   document.getElementById('dash-stats').innerHTML=
     '<div class="sc"><div class="sc-num">'+active.length+'</div><div class="sc-lbl">Active candidates</div></div>'+
@@ -2436,6 +2446,7 @@ function openCandidate(id){
   }());
   html+=''
   html+='<div class="ditem"><label>Source</label><span class="val">'+(SOURCE_LABELS[c.source]||c.source||'--')+'</span></div>';
+  html+='<div class="ditem"><label>Salary expectation</label><span class="val">'+(c.expected_salary?esc(c.expected_salary):'--')+'</span></div>';
   html+='<div class="ditem"><label>Added</label><span class="val">'+fmtAgo(c.created_at)+'</span></div>';
   if(c.linkedin_url)html+='<div class="ditem" style="grid-column:1/-1"><label>LinkedIn</label><span><a href="'+esc(c.linkedin_url)+'" target="_blank" class="link-ext">View profile &#8599;</a></span></div>';
   html+='</div></div>';
@@ -2446,6 +2457,7 @@ function openCandidate(id){
   html+='<div class="dactions">';
   html+='<button class="btn bg2x bsm" onclick="openEditCandidate(\''+id+'\')">Edit details</button>';
   html+='<button class="btn bg2x bsm" onclick="addToContacts(\''+id+'\')">Save contact</button>';
+  if(c.resume_url){html+='<a class="btn bg2x bsm" href="'+esc(c.resume_url)+'" target="_blank" rel="noopener" style="text-decoration:none;">View resume &#8599;</a>';}
   if(c.stage==='offer'){
     var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
     var isIntern=(role&&role.employment_type==='intern');
@@ -2670,6 +2682,8 @@ function openAddCandidate(roleId){
   document.getElementById('ac-role').value=roleId||'';
   document.getElementById('ac-source').value='linkedin';
   document.getElementById('ac-linkedin').value='';
+  document.getElementById('ac-salary').value='';
+  document.getElementById('ac-resume').value='';
   document.getElementById('ac-notes').value='';
   openM('m-add-candidate');
 }
@@ -2685,6 +2699,8 @@ function openEditCandidate(id){
   document.getElementById('ac-role').value=c.role_id||'';
   document.getElementById('ac-source').value=c.source||'linkedin';
   document.getElementById('ac-linkedin').value=c.linkedin_url||'';
+  document.getElementById('ac-salary').value=c.expected_salary||'';
+  document.getElementById('ac-resume').value=c.resume_url||'';
   document.getElementById('ac-notes').value=c.notes||'';
   closeM('m-candidate');
   openM('m-add-candidate');
@@ -2737,6 +2753,8 @@ async function saveCandidate(){
     phone:document.getElementById('ac-phone').value.trim()||null,
     role_id:roleId, source:document.getElementById('ac-source').value,
     linkedin_url:document.getElementById('ac-linkedin').value.trim()||null,
+    expected_salary:document.getElementById('ac-salary').value.trim()||null,
+    resume_url:document.getElementById('ac-resume').value.trim()||null,
     notes:document.getElementById('ac-notes').value.trim()||null
   };
 
