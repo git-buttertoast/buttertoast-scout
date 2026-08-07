@@ -1347,6 +1347,36 @@ var SOURCE_LABELS = {linkedin:'LinkedIn',referral:'Referral',portal:'Portal',dir
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='show '+(t||'ok');clearTimeout(el._t);el._t=setTimeout(function(){el.className='';},3000);}
 function esc(s){if(!s)return '';var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+// Accepts a link however it is pasted and returns a usable https address, or refuses
+// with a plain reason. A value with no scheme (linkedin.com/in/name) used to be stored
+// raw and rendered as href="linkedin.com/in/name", which the browser resolves against
+// the current page, producing scout.buttertoast.co/linkedin.com/in/name.
+var BT_FILE_EXT=/\.(pdf|docx?|pptx?|xlsx?|png|jpe?g|gif|zip|rar|txt|csv)$/i;
+function btUrl(raw){
+  var s=(raw==null?'':String(raw)).trim();
+  if(!s)return {ok:true,value:null,reason:''};
+  s=s.replace(/^[<("'\s]+/,'').replace(/[>)"'\s]+$/,'');
+  if(/^file:\/\//i.test(s))
+    return {ok:false,value:null,reason:'That is a file on your computer, not a web link. Upload it to Drive and paste the share link.'};
+  if(/^[A-Za-z]:[\\\/]/.test(s)||/^\//.test(s)||/^(Users|Documents|Downloads|Desktop)\//i.test(s))
+    return {ok:false,value:null,reason:'That looks like a file path on your computer. Upload it to Drive and paste the share link.'};
+  var m=s.match(/https?:\/\/[^\s<>"']+/i);
+  if(m){s=m[0];}
+  else{
+    var d2=s.match(/(?:www\.|[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<>"']*)?/i);
+    if(!d2)return {ok:false,value:null,reason:'That does not look like a web link. Paste the full address, for example https://linkedin.com/in/name'};
+    if(BT_FILE_EXT.test(d2[0].split('/')[0]))
+      return {ok:false,value:null,reason:'That looks like a file name, not a web link. Upload it to Drive and paste the share link.'};
+    s='https://'+d2[0];
+  }
+  s=s.replace(/[.,;:!?]+$/,'');
+  try{var u=new URL(s);if(!u.hostname||u.hostname.indexOf('.')===-1)throw 0;
+      s=u.protocol.toLowerCase()+'//'+u.host.toLowerCase()+u.pathname+u.search+u.hash;}
+  catch(e){return {ok:false,value:null,reason:'That does not look like a valid web address.'};}
+  return {ok:true,value:s,reason:''};
+}
+// Safe for rendering existing rows that were stored before normalisation existed.
+function btHref(raw){var r=btUrl(raw);return r.ok&&r.value?r.value:'';}
 function openM(id){document.getElementById(id).classList.add('open');}
 function closeM(id){document.getElementById(id).classList.remove('open');}
 function fmt(d){if(!d)return '';return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
@@ -2448,7 +2478,10 @@ function openCandidate(id){
   html+='<div class="ditem"><label>Source</label><span class="val">'+(SOURCE_LABELS[c.source]||c.source||'--')+'</span></div>';
   html+='<div class="ditem"><label>Salary expectation</label><span class="val">'+(c.expected_salary?esc(c.expected_salary):'--')+'</span></div>';
   html+='<div class="ditem"><label>Added</label><span class="val">'+fmtAgo(c.created_at)+'</span></div>';
-  if(c.linkedin_url)html+='<div class="ditem" style="grid-column:1/-1"><label>LinkedIn</label><span><a href="'+esc(c.linkedin_url)+'" target="_blank" class="link-ext">View profile &#8599;</a></span></div>';
+  if(c.linkedin_url){var _li=btHref(c.linkedin_url);
+    html+='<div class="ditem" style="grid-column:1/-1"><label>LinkedIn</label><span>'+
+      (_li?'<a href="'+esc(_li)+'" target="_blank" rel="noopener" class="link-ext">View profile &#8599;</a>'
+         :'<span style="color:var(--amber)">Not a usable link. Re-enter it on this candidate.</span>')+'</span></div>';}
   html+='</div></div>';
 
   // Actions
@@ -2457,7 +2490,9 @@ function openCandidate(id){
   html+='<div class="dactions">';
   html+='<button class="btn bg2x bsm" onclick="openEditCandidate(\''+id+'\')">Edit details</button>';
   html+='<button class="btn bg2x bsm" onclick="addToContacts(\''+id+'\')">Save contact</button>';
-  if(c.resume_url){html+='<a class="btn bg2x bsm" href="'+esc(c.resume_url)+'" target="_blank" rel="noopener" style="text-decoration:none;">View resume &#8599;</a>';}
+  if(c.resume_url){var _cv=btHref(c.resume_url);
+    html+=(_cv?'<a class="btn bg2x bsm" href="'+esc(_cv)+'" target="_blank" rel="noopener" style="text-decoration:none;">View resume &#8599;</a>'
+             :'<span class="btn bg2x bsm" style="color:var(--amber);cursor:default;" title="Stored as a file on someone\'s computer. Upload it to Drive and re-enter the link.">Resume link unusable</span>');}
   if(c.stage==='offer'){
     var role=ALL_ROLES.find(function(x){return x.id===c.role_id;});
     var isIntern=(role&&role.employment_type==='intern');
@@ -2748,13 +2783,19 @@ async function saveCandidate(){
   btn.disabled=true; btn.innerHTML='<span class="spin"></span>Saving...';
 
   var id=document.getElementById('ac-id').value;
+  var liRes=btUrl(document.getElementById('ac-linkedin').value);
+  if(!liRes.ok){ btn.disabled=false; btn.textContent='Save'; toast('LinkedIn: '+liRes.reason,'fail'); document.getElementById('ac-linkedin').focus(); return; }
+  var cvRes=btUrl(document.getElementById('ac-resume').value);
+  if(!cvRes.ok){ btn.disabled=false; btn.textContent='Save'; toast('Resume: '+cvRes.reason,'fail'); document.getElementById('ac-resume').focus(); return; }
+  document.getElementById('ac-linkedin').value=liRes.value||'';
+  document.getElementById('ac-resume').value=cvRes.value||'';
   var payload={
     full_name:name, email:document.getElementById('ac-email').value.trim()||null,
     phone:document.getElementById('ac-phone').value.trim()||null,
     role_id:roleId, source:document.getElementById('ac-source').value,
-    linkedin_url:document.getElementById('ac-linkedin').value.trim()||null,
+    linkedin_url:liRes.value,
     expected_salary:document.getElementById('ac-salary').value.trim()||null,
-    resume_url:document.getElementById('ac-resume').value.trim()||null,
+    resume_url:cvRes.value,
     notes:document.getElementById('ac-notes').value.trim()||null
   };
 
