@@ -1346,6 +1346,9 @@ var SOURCE_LABELS = {linkedin:'LinkedIn',referral:'Referral',portal:'Portal',dir
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='show '+(t||'ok');clearTimeout(el._t);el._t=setTimeout(function(){el.className='';},3000);}
+// Calendar date in IST. new Date().toISOString() yields the UTC date, which is
+// yesterday between midnight and 5:30am local, so it must not be used for "today".
+function todayIST(){return new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});}
 function esc(s){if(!s)return '';var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 // Accepts a link however it is pasted and returns a usable https address, or refuses
 // with a plain reason. A value with no scheme (linkedin.com/in/name) used to be stored
@@ -2348,7 +2351,7 @@ async function openDeviceModal(obId,employeeId,candidateId){
   document.getElementById('dev-condition').value='good';
   document.getElementById('dev-value').value='';
   document.getElementById('dev-deprec').value='0.20';
-  setDateField('dev-date',new Date().toISOString().split('T')[0]);
+  setDateField('dev-date',todayIST());
   document.getElementById('dev-notes').value='';
   onDevOwnershipChange();
   openM('m-device');
@@ -2375,7 +2378,7 @@ async function saveDevice(){
     date_added:document.getElementById('dev-date').value||null,
     depreciation_rate:(isCompany&&deprecStr)?parseFloat(deprecStr):0.20,
     condition_at_handover:document.getElementById('dev-condition').value, condition_notes:null,
-    status:'assigned', assigned_date:new Date().toISOString().split('T')[0],
+    status:'assigned', assigned_date:todayIST(),
     notes:document.getElementById('dev-notes').value.trim()||null
   };
   var res=await db.from('employee_devices').insert(payload).select('id').single();
@@ -2989,7 +2992,7 @@ function openInternshipOfferModal(candidateId){
   var c=ALL_CANDIDATES.find(function(x){return x.id===candidateId;});
   var role=c?ALL_ROLES.find(function(x){return x.id===c.role_id;}):null;
   document.getElementById('intern-offer-cand-id').value=candidateId;
-  setDateField('intern-offer-joining',new Date().toISOString().split('T')[0]);
+  setDateField('intern-offer-joining',todayIST());
   setDateField('intern-offer-end','');
   var sub=document.getElementById('intern-offer-role-sub');
   if(sub)sub.textContent=role?role.title+(role.department?' \u00b7 '+(DEPT_DISPLAY[role.department]||role.department):''):'';
@@ -3025,7 +3028,7 @@ async function generateInternshipOffer(){
       reports_to_name:mgr?mgr.name:'',
       joining_date:joining,
       internship_end_date:endDate,
-      effective_date:new Date().toISOString().split('T')[0],
+      effective_date:todayIST(),
       stipend:stipend
     });
     closeM('m-intern-offer');
@@ -3165,7 +3168,7 @@ async function generateOfferLetter(){
       department:role?(DEPT_DISPLAY[role.department]||role.department):'',
       reports_to_name:mgr?mgr.name:'',
       joining_date:joining,
-      effective_date:new Date().toISOString().split('T')[0],
+      effective_date:todayIST(),
       probation_ctc:ctc,
       confirmed_ctc:confirmedCtc,
       duties:duties,
@@ -3291,7 +3294,7 @@ async function generateAppointmentLetter(){
       department:role?(DEPT_DISPLAY[role.department]||role.department):'',
       reports_to_name:mgr?mgr.name:'',
       joining_date:joining,
-      effective_date:new Date().toISOString().split('T')[0],
+      effective_date:todayIST(),
       monthly_ctc:ctc,
       confirmed_ctc:confirmedCtc,
       probation_end_date:probationEnd,
@@ -3331,7 +3334,7 @@ async function openConvertModal(candidateId){
   document.getElementById('conv-cand-id').value=candidateId;
 
   // Joining date: from the appointment-letter terms if captured, else today.
-  setDateField('conv-joining',(ob&&ob.joining_date)?ob.joining_date:new Date().toISOString().split('T')[0]);
+  setDateField('conv-joining',(ob&&ob.joining_date)?ob.joining_date:todayIST());
 
   // Department / employment type: from the candidate's pipeline role.
   document.getElementById('conv-dept').value=role&&role.department?role.department:'design';
